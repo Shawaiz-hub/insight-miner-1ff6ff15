@@ -4,8 +4,14 @@ import { DataUpload } from "@/components/dashboard/DataUpload";
 import { AlgorithmSelector } from "@/components/dashboard/AlgorithmSelector";
 import { ParameterConfig } from "@/components/dashboard/ParameterConfig";
 import { ResultsTable } from "@/components/dashboard/ResultsTable";
+import { ResultsVisualization } from "@/components/dashboard/ResultsVisualization";
+import { RuleNetwork } from "@/components/dashboard/RuleNetwork";
+import { ExportResults } from "@/components/dashboard/ExportResults";
 import { Button } from "@/components/ui/button";
-import { Play, RotateCcw, Download, Database, Settings, BarChart3 } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Play, RotateCcw, Database, Settings, BarChart3, AlertCircle } from "lucide-react";
+import { useMining } from "@/hooks/useMining";
+import { Progress } from "@/components/ui/progress";
 
 export type MiningStep = "upload" | "algorithm" | "parameters" | "results";
 
@@ -32,6 +38,12 @@ export interface AssociationRule {
   lift: number;
 }
 
+export interface FrequentItemset {
+  items: string[];
+  support: number;
+  count: number;
+}
+
 const Dashboard = () => {
   const [step, setStep] = useState<MiningStep>("upload");
   const [dataset, setDataset] = useState<DatasetInfo | null>(null);
@@ -43,7 +55,10 @@ const Dashboard = () => {
     liftThreshold: 1.0,
   });
   const [results, setResults] = useState<AssociationRule[]>([]);
-  const [isRunning, setIsRunning] = useState(false);
+  const [itemsets, setItemsets] = useState<FrequentItemset[]>([]);
+  const [transactionCount, setTransactionCount] = useState(0);
+  
+  const { runMining, isRunning, error, progress } = useMining();
 
   const handleDatasetUpload = (data: DatasetInfo) => {
     setDataset(data);
@@ -56,32 +71,24 @@ const Dashboard = () => {
   };
 
   const handleRunMining = async () => {
-    setIsRunning(true);
+    if (!dataset) return;
     
-    // Simulate mining process
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    const result = await runMining(dataset.transactions, selectedAlgorithm, params);
     
-    // Generate mock results
-    const mockRules: AssociationRule[] = [
-      { id: 1, antecedent: ["Bread"], consequent: ["Milk"], support: 0.42, confidence: 0.85, lift: 1.35 },
-      { id: 2, antecedent: ["Diaper"], consequent: ["Beer"], support: 0.35, confidence: 0.78, lift: 1.52 },
-      { id: 3, antecedent: ["Bread", "Butter"], consequent: ["Milk"], support: 0.28, confidence: 0.91, lift: 1.44 },
-      { id: 4, antecedent: ["Eggs"], consequent: ["Bacon"], support: 0.31, confidence: 0.72, lift: 1.28 },
-      { id: 5, antecedent: ["Coffee"], consequent: ["Sugar"], support: 0.45, confidence: 0.88, lift: 1.62 },
-      { id: 6, antecedent: ["Milk", "Bread"], consequent: ["Butter"], support: 0.22, confidence: 0.68, lift: 1.18 },
-      { id: 7, antecedent: ["Chips"], consequent: ["Soda"], support: 0.38, confidence: 0.82, lift: 1.45 },
-      { id: 8, antecedent: ["Tea"], consequent: ["Honey"], support: 0.19, confidence: 0.65, lift: 1.21 },
-    ];
-    
-    setResults(mockRules.filter(r => r.support >= params.minSupport && r.confidence >= params.minConfidence));
-    setIsRunning(false);
-    setStep("results");
+    if (result) {
+      setResults(result.rules);
+      setItemsets(result.itemsets);
+      setTransactionCount(result.transactionCount);
+      setStep("results");
+    }
   };
 
   const handleReset = () => {
     setStep("upload");
     setDataset(null);
     setResults([]);
+    setItemsets([]);
+    setTransactionCount(0);
   };
 
   const steps = [
@@ -107,11 +114,14 @@ const Dashboard = () => {
               </p>
             </div>
             <div className="flex gap-3">
-              {step === "results" && (
-                <Button variant="outline" className="gap-2">
-                  <Download className="w-4 h-4" />
-                  Export CSV
-                </Button>
+              {step === "results" && results.length > 0 && (
+                <ExportResults
+                  rules={results}
+                  itemsets={itemsets}
+                  algorithm={selectedAlgorithm}
+                  params={params}
+                  transactionCount={transactionCount}
+                />
               )}
               <Button variant="outline" onClick={handleReset} className="gap-2">
                 <RotateCcw className="w-4 h-4" />
@@ -145,6 +155,14 @@ const Dashboard = () => {
             ))}
           </div>
 
+          {/* Error Display */}
+          {error && (
+            <div className="mb-6 p-4 rounded-xl bg-destructive/10 border border-destructive/30 flex items-center gap-3">
+              <AlertCircle className="w-5 h-5 text-destructive" />
+              <p className="text-sm text-destructive">{error}</p>
+            </div>
+          )}
+
           {/* Content */}
           <div className="glass-card rounded-2xl p-6 md:p-8">
             {step === "upload" && (
@@ -166,6 +184,17 @@ const Dashboard = () => {
                   onChange={setParams}
                   algorithm={selectedAlgorithm}
                 />
+                
+                {isRunning && (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">Processing...</span>
+                      <span className="text-primary">{progress}%</span>
+                    </div>
+                    <Progress value={progress} className="h-2" />
+                  </div>
+                )}
+                
                 <div className="flex justify-end">
                   <Button
                     variant="hero"
@@ -191,11 +220,29 @@ const Dashboard = () => {
             )}
             
             {step === "results" && (
-              <ResultsTable
-                rules={results}
-                algorithm={selectedAlgorithm}
-                params={params}
-              />
+              <Tabs defaultValue="table" className="space-y-6">
+                <TabsList className="grid w-full grid-cols-3">
+                  <TabsTrigger value="table">Rules Table</TabsTrigger>
+                  <TabsTrigger value="charts">Charts</TabsTrigger>
+                  <TabsTrigger value="network">Network</TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="table">
+                  <ResultsTable
+                    rules={results}
+                    algorithm={selectedAlgorithm}
+                    params={params}
+                  />
+                </TabsContent>
+                
+                <TabsContent value="charts">
+                  <ResultsVisualization rules={results} itemsets={itemsets} />
+                </TabsContent>
+                
+                <TabsContent value="network">
+                  <RuleNetwork rules={results} />
+                </TabsContent>
+              </Tabs>
             )}
           </div>
         </div>
