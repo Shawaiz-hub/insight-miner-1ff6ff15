@@ -1,6 +1,7 @@
 import { useState, useCallback } from "react";
 import { Upload, FileSpreadsheet, Check, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useMining } from "@/hooks/useMining";
 import type { DatasetInfo } from "@/pages/Dashboard";
 
 interface DataUploadProps {
@@ -11,6 +12,8 @@ export function DataUpload({ onUpload }: DataUploadProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [preview, setPreview] = useState<DatasetInfo | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const { uploadDataset } = useMining();
 
   const parseCSV = (content: string): string[][] => {
     const lines = content.trim().split("\n");
@@ -217,9 +220,19 @@ export function DataUpload({ onUpload }: DataUploadProps) {
           <Button
             variant="hero"
             className="w-full"
-            onClick={() => onUpload(preview)}
+            disabled={isUploading}
+            onClick={async () => {
+              setIsUploading(true);
+              const result = await uploadDataset(new File([preview.transactions.map(t => t.join(",")).join("\n")], preview.name, { type: "text/csv" }));
+              setIsUploading(false);
+              if (result?.success) {
+                onUpload(preview);
+              } else {
+                setError("Failed to upload to backend");
+              }
+            }}
           >
-            Continue with this dataset
+            {isUploading ? "Uploading..." : "Continue with this dataset"}
           </Button>
         </div>
       )}
