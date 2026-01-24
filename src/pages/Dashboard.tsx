@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Navbar } from "@/components/layout/Navbar";
 import { DataUpload } from "@/components/dashboard/DataUpload";
 import { AlgorithmSelector } from "@/components/dashboard/AlgorithmSelector";
@@ -7,13 +7,14 @@ import { ResultsTable } from "@/components/dashboard/ResultsTable";
 import { ResultsVisualization } from "@/components/dashboard/ResultsVisualization";
 import { RuleNetwork } from "@/components/dashboard/RuleNetwork";
 import { ExportResults } from "@/components/dashboard/ExportResults";
+import { PreprocessingConfig } from "@/components/dashboard/PreprocessingConfig";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Play, RotateCcw, Database, Settings, BarChart3, AlertCircle } from "lucide-react";
+import { Play, RotateCcw, Database, Settings, BarChart3, AlertCircle, Filter, CheckCircle2, XCircle } from "lucide-react";
 import { useMining } from "@/hooks/useMining";
 import { Progress } from "@/components/ui/progress";
 
-export type MiningStep = "upload" | "algorithm" | "parameters" | "results";
+export type MiningStep = "upload" | "preprocess" | "algorithm" | "parameters" | "results";
 
 export interface DatasetInfo {
   name: string;
@@ -57,11 +58,25 @@ const Dashboard = () => {
   const [results, setResults] = useState<AssociationRule[]>([]);
   const [itemsets, setItemsets] = useState<FrequentItemset[]>([]);
   const [transactionCount, setTransactionCount] = useState(0);
+  const [backendConnected, setBackendConnected] = useState<boolean | null>(null);
   
-  const { runMining, isRunning, error, progress } = useMining();
+  const { runMining, checkHealth, isRunning, error, progress, datasetStats } = useMining();
+
+  // Check backend connection on mount
+  useEffect(() => {
+    const checkConnection = async () => {
+      const connected = await checkHealth();
+      setBackendConnected(connected);
+    };
+    checkConnection();
+  }, []);
 
   const handleDatasetUpload = (data: DatasetInfo) => {
     setDataset(data);
+    setStep("preprocess");
+  };
+
+  const handlePreprocessingComplete = () => {
     setStep("algorithm");
   };
 
@@ -73,7 +88,7 @@ const Dashboard = () => {
   const handleRunMining = async () => {
     if (!dataset) return;
     
-    const result = await runMining(dataset.transactions, selectedAlgorithm, params);
+    const result = await runMining(null, selectedAlgorithm, params);
     
     if (result) {
       setResults(result.rules);
@@ -93,6 +108,7 @@ const Dashboard = () => {
 
   const steps = [
     { key: "upload", label: "Upload", icon: Database },
+    { key: "preprocess", label: "Preprocess", icon: Filter },
     { key: "algorithm", label: "Algorithm", icon: Settings },
     { key: "parameters", label: "Parameters", icon: Settings },
     { key: "results", label: "Results", icon: BarChart3 },
@@ -113,7 +129,24 @@ const Dashboard = () => {
                 Upload data, configure algorithms, and discover patterns
               </p>
             </div>
-            <div className="flex gap-3">
+            <div className="flex items-center gap-3">
+              {/* Backend Status */}
+              <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium ${
+                backendConnected === true 
+                  ? "bg-green-500/10 text-green-500 border border-green-500/20"
+                  : backendConnected === false 
+                  ? "bg-destructive/10 text-destructive border border-destructive/20"
+                  : "bg-muted text-muted-foreground"
+              }`}>
+                {backendConnected === true ? (
+                  <><CheckCircle2 className="w-3 h-3" /> Backend Connected</>
+                ) : backendConnected === false ? (
+                  <><XCircle className="w-3 h-3" /> Backend Offline</>
+                ) : (
+                  "Checking..."
+                )}
+              </div>
+              
               {step === "results" && results.length > 0 && (
                 <ExportResults
                   rules={results}
@@ -129,6 +162,22 @@ const Dashboard = () => {
               </Button>
             </div>
           </div>
+
+          {/* Backend Warning */}
+          {backendConnected === false && (
+            <div className="mb-6 p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 space-y-2">
+              <div className="flex items-center gap-3">
+                <AlertCircle className="w-5 h-5 text-amber-500" />
+                <p className="text-sm font-medium text-amber-500">Flask Backend Not Running</p>
+              </div>
+              <p className="text-sm text-muted-foreground pl-8">
+                Start the backend server to enable mining. Run these commands in your terminal:
+              </p>
+              <pre className="text-xs bg-secondary/50 rounded-lg p-3 ml-8 overflow-x-auto">
+                <code>cd backend{"\n"}pip install -r requirements.txt{"\n"}python app.py</code>
+              </pre>
+            </div>
+          )}
 
           {/* Progress Steps */}
           <div className="flex items-center gap-2 mb-8 overflow-x-auto pb-2">
@@ -169,6 +218,14 @@ const Dashboard = () => {
               <DataUpload onUpload={handleDatasetUpload} />
             )}
             
+            {step === "preprocess" && dataset && (
+              <PreprocessingConfig
+                dataset={dataset}
+                stats={datasetStats}
+                onComplete={handlePreprocessingComplete}
+              />
+            )}
+            
             {step === "algorithm" && (
               <AlgorithmSelector
                 selected={selectedAlgorithm}
@@ -200,7 +257,7 @@ const Dashboard = () => {
                     variant="hero"
                     size="lg"
                     onClick={handleRunMining}
-                    disabled={isRunning}
+                    disabled={isRunning || backendConnected === false}
                     className="gap-2"
                   >
                     {isRunning ? (
