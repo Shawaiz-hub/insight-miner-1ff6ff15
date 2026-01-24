@@ -62,7 +62,6 @@ const Dashboard = () => {
   
   const { runMining, checkHealth, isRunning, error, progress, datasetStats } = useMining();
 
-  // Check backend connection on mount
   useEffect(() => {
     const checkConnection = async () => {
       const connected = await checkHealth();
@@ -76,20 +75,12 @@ const Dashboard = () => {
     setStep("preprocess");
   };
 
-  const handlePreprocessingComplete = () => {
-    setStep("algorithm");
-  };
-
-  const handleAlgorithmSelect = (algo: string) => {
-    setSelectedAlgorithm(algo);
-    setStep("parameters");
-  };
+  const handlePreprocessingComplete = () => setStep("algorithm");
+  const handleAlgorithmSelect = (algo: string) => { setSelectedAlgorithm(algo); setStep("parameters"); };
 
   const handleRunMining = async () => {
     if (!dataset) return;
-    
     const result = await runMining(null, selectedAlgorithm, params);
-    
     if (result) {
       setResults(result.rules);
       setItemsets(result.itemsets);
@@ -98,13 +89,7 @@ const Dashboard = () => {
     }
   };
 
-  const handleReset = () => {
-    setStep("upload");
-    setDataset(null);
-    setResults([]);
-    setItemsets([]);
-    setTransactionCount(0);
-  };
+  const handleReset = () => { setStep("upload"); setDataset(null); setResults([]); setItemsets([]); setTransactionCount(0); };
 
   const steps = [
     { key: "upload", label: "Upload", icon: Database },
@@ -117,188 +102,69 @@ const Dashboard = () => {
   const currentStepIndex = steps.findIndex((s) => s.key === step);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background relative overflow-hidden">
+      <div className="fixed inset-0 bg-animated-gradient pointer-events-none" />
+      <div className="fixed inset-0 bg-grid opacity-10 pointer-events-none" />
+      
       <Navbar />
-      <main className="pt-24 pb-12">
+      <main className="pt-24 pb-12 relative z-10">
         <div className="container max-w-6xl">
-          {/* Header */}
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8 animate-fade-in">
             <div>
               <h1 className="text-3xl font-bold mb-2">Mining Dashboard</h1>
-              <p className="text-muted-foreground">
-                Upload data, configure algorithms, and discover patterns
-              </p>
+              <p className="text-muted-foreground">Upload data, configure algorithms, and discover patterns</p>
             </div>
             <div className="flex items-center gap-3">
-              {/* Backend Status */}
-              <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium ${
-                backendConnected === true 
-                  ? "bg-green-500/10 text-green-500 border border-green-500/20"
-                  : backendConnected === false 
-                  ? "bg-destructive/10 text-destructive border border-destructive/20"
-                  : "bg-muted text-muted-foreground"
-              }`}>
-                {backendConnected === true ? (
-                  <><CheckCircle2 className="w-3 h-3" /> Backend Connected</>
-                ) : backendConnected === false ? (
-                  <><XCircle className="w-3 h-3" /> Backend Offline</>
-                ) : (
-                  "Checking..."
-                )}
+              <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium ${backendConnected === true ? "bg-green-500/10 text-green-500 border border-green-500/20" : backendConnected === false ? "bg-destructive/10 text-destructive border border-destructive/20" : "bg-muted text-muted-foreground"}`}>
+                {backendConnected === true ? <><CheckCircle2 className="w-3 h-3" /> Backend Connected</> : backendConnected === false ? <><XCircle className="w-3 h-3" /> Backend Offline</> : "Checking..."}
               </div>
-              
-              {step === "results" && results.length > 0 && (
-                <ExportResults
-                  rules={results}
-                  itemsets={itemsets}
-                  algorithm={selectedAlgorithm}
-                  params={params}
-                  transactionCount={transactionCount}
-                />
-              )}
-              <Button variant="outline" onClick={handleReset} className="gap-2">
-                <RotateCcw className="w-4 h-4" />
-                Reset
-              </Button>
+              {step === "results" && results.length > 0 && <ExportResults rules={results} itemsets={itemsets} algorithm={selectedAlgorithm} params={params} transactionCount={transactionCount} />}
+              <Button variant="outline" onClick={handleReset} className="gap-2"><RotateCcw className="w-4 h-4" />Reset</Button>
             </div>
           </div>
 
-          {/* Backend Warning */}
           {backendConnected === false && (
             <div className="mb-6 p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 space-y-2">
-              <div className="flex items-center gap-3">
-                <AlertCircle className="w-5 h-5 text-amber-500" />
-                <p className="text-sm font-medium text-amber-500">Flask Backend Not Running</p>
-              </div>
-              <p className="text-sm text-muted-foreground pl-8">
-                Start the backend server to enable mining. Run these commands in your terminal:
-              </p>
-              <pre className="text-xs bg-secondary/50 rounded-lg p-3 ml-8 overflow-x-auto">
-                <code>cd backend{"\n"}pip install -r requirements.txt{"\n"}python app.py</code>
-              </pre>
+              <div className="flex items-center gap-3"><AlertCircle className="w-5 h-5 text-amber-500" /><p className="text-sm font-medium text-amber-500">Flask Backend Not Running</p></div>
+              <p className="text-sm text-muted-foreground pl-8">Start the backend server to enable mining:</p>
+              <pre className="text-xs bg-secondary/50 rounded-lg p-3 ml-8 overflow-x-auto"><code>cd backend{"\n"}pip install -r requirements.txt{"\n"}python app.py</code></pre>
             </div>
           )}
 
-          {/* Progress Steps */}
-          <div className="flex items-center gap-2 mb-8 overflow-x-auto pb-2">
+          <div className="flex items-center gap-2 mb-8 overflow-x-auto pb-2 animate-fade-in" style={{ animationDelay: "0.1s" }}>
             {steps.map((s, index) => (
               <div key={s.key} className="flex items-center">
-                <button
-                  onClick={() => index <= currentStepIndex && setStep(s.key as MiningStep)}
-                  disabled={index > currentStepIndex}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${
-                    s.key === step
-                      ? "bg-primary text-primary-foreground"
-                      : index < currentStepIndex
-                      ? "bg-secondary text-secondary-foreground hover:bg-secondary/80"
-                      : "bg-muted text-muted-foreground cursor-not-allowed"
-                  }`}
-                >
-                  <s.icon className="w-4 h-4" />
-                  <span className="text-sm font-medium whitespace-nowrap">{s.label}</span>
+                <button onClick={() => index <= currentStepIndex && setStep(s.key as MiningStep)} disabled={index > currentStepIndex} className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-300 hover-scale workflow-step ${s.key === step ? "bg-primary text-primary-foreground shadow-lg shadow-primary/30 active" : index < currentStepIndex ? "bg-secondary text-secondary-foreground hover:bg-secondary/80" : "bg-muted text-muted-foreground cursor-not-allowed"}`}>
+                  <s.icon className="w-4 h-4" /><span className="text-sm font-medium whitespace-nowrap">{s.label}</span>
                 </button>
-                {index < steps.length - 1 && (
-                  <div className={`w-8 h-0.5 mx-2 ${index < currentStepIndex ? "bg-primary" : "bg-border"}`} />
-                )}
+                {index < steps.length - 1 && <div className={`w-8 h-0.5 mx-2 transition-all duration-500 ${index < currentStepIndex ? "bg-gradient-to-r from-primary to-primary/50" : "bg-border"}`} />}
               </div>
             ))}
           </div>
 
-          {/* Error Display */}
-          {error && (
-            <div className="mb-6 p-4 rounded-xl bg-destructive/10 border border-destructive/30 flex items-center gap-3">
-              <AlertCircle className="w-5 h-5 text-destructive" />
-              <p className="text-sm text-destructive">{error}</p>
-            </div>
-          )}
+          {error && <div className="mb-6 p-4 rounded-xl bg-destructive/10 border border-destructive/30 flex items-center gap-3"><AlertCircle className="w-5 h-5 text-destructive" /><p className="text-sm text-destructive">{error}</p></div>}
 
-          {/* Content */}
-          <div className="glass-card rounded-2xl p-6 md:p-8">
-            {step === "upload" && (
-              <DataUpload onUpload={handleDatasetUpload} />
-            )}
-            
-            {step === "preprocess" && dataset && (
-              <PreprocessingConfig
-                dataset={dataset}
-                stats={datasetStats}
-                onComplete={handlePreprocessingComplete}
-              />
-            )}
-            
-            {step === "algorithm" && (
-              <AlgorithmSelector
-                selected={selectedAlgorithm}
-                onSelect={handleAlgorithmSelect}
-                dataset={dataset}
-              />
-            )}
-            
+          <div className="glass-card-elevated rounded-2xl p-6 md:p-8 animate-fade-in-scale" style={{ animationDelay: "0.2s" }}>
+            {step === "upload" && <DataUpload onUpload={handleDatasetUpload} />}
+            {step === "preprocess" && dataset && <PreprocessingConfig dataset={dataset} stats={datasetStats} onComplete={handlePreprocessingComplete} />}
+            {step === "algorithm" && <AlgorithmSelector selected={selectedAlgorithm} onSelect={handleAlgorithmSelect} dataset={dataset} />}
             {step === "parameters" && (
               <div className="space-y-6">
-                <ParameterConfig
-                  params={params}
-                  onChange={setParams}
-                  algorithm={selectedAlgorithm}
-                />
-                
-                {isRunning && (
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">Processing...</span>
-                      <span className="text-primary">{progress}%</span>
-                    </div>
-                    <Progress value={progress} className="h-2" />
-                  </div>
-                )}
-                
+                <ParameterConfig params={params} onChange={setParams} algorithm={selectedAlgorithm} />
+                {isRunning && <div className="space-y-2"><div className="flex items-center justify-between text-sm"><span className="text-muted-foreground">Processing...</span><span className="text-primary">{progress}%</span></div><Progress value={progress} className="h-2" /></div>}
                 <div className="flex justify-end">
-                  <Button
-                    variant="hero"
-                    size="lg"
-                    onClick={handleRunMining}
-                    disabled={isRunning || backendConnected === false}
-                    className="gap-2"
-                  >
-                    {isRunning ? (
-                      <>
-                        <div className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
-                        Mining...
-                      </>
-                    ) : (
-                      <>
-                        <Play className="w-4 h-4" />
-                        Run Mining
-                      </>
-                    )}
+                  <Button variant="hero" size="lg" onClick={handleRunMining} disabled={isRunning || backendConnected === false} className="gap-2">
+                    {isRunning ? <><div className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />Mining...</> : <><Play className="w-4 h-4" />Run Mining</>}
                   </Button>
                 </div>
               </div>
             )}
-            
             {step === "results" && (
               <Tabs defaultValue="table" className="space-y-6">
-                <TabsList className="grid w-full grid-cols-3">
-                  <TabsTrigger value="table">Rules Table</TabsTrigger>
-                  <TabsTrigger value="charts">Charts</TabsTrigger>
-                  <TabsTrigger value="network">Network</TabsTrigger>
-                </TabsList>
-                
-                <TabsContent value="table">
-                  <ResultsTable
-                    rules={results}
-                    algorithm={selectedAlgorithm}
-                    params={params}
-                  />
-                </TabsContent>
-                
-                <TabsContent value="charts">
-                  <ResultsVisualization rules={results} itemsets={itemsets} />
-                </TabsContent>
-                
-                <TabsContent value="network">
-                  <RuleNetwork rules={results} />
-                </TabsContent>
+                <TabsList className="grid w-full grid-cols-3"><TabsTrigger value="table">Rules Table</TabsTrigger><TabsTrigger value="charts">Charts</TabsTrigger><TabsTrigger value="network">Network</TabsTrigger></TabsList>
+                <TabsContent value="table"><ResultsTable rules={results} algorithm={selectedAlgorithm} params={params} /></TabsContent>
+                <TabsContent value="charts"><ResultsVisualization rules={results} itemsets={itemsets} /></TabsContent>
+                <TabsContent value="network"><RuleNetwork rules={results} /></TabsContent>
               </Tabs>
             )}
           </div>
