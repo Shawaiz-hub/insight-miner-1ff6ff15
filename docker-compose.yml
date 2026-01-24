@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  # React Frontend
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - smartmine-network
+    restart: unless-stopped
+
+  # Flask Backend
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "5000:5000"
+    volumes:
+      - backend-uploads:/app/uploads
+      - backend-processed:/app/processed
+      - backend-spmf:/app/spmf
+    environment:
+      - FLASK_ENV=production
+      - PYTHONUNBUFFERED=1
+    networks:
+      - smartmine-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+networks:
+  smartmine-network:
+    driver: bridge
+
+volumes:
+  backend-uploads:
+  backend-processed:
+  backend-spmf:

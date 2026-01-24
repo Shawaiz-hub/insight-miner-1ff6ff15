@@ -15,10 +15,13 @@ type SortDir = "asc" | "desc";
 const algorithmNames: Record<string, string> = {
   apriori: "Apriori",
   fpgrowth: "FP-Growth",
+  "fp-growth": "FP-Growth",
   eclat: "ECLAT",
   hmine: "H-Mine",
+  "h-mine": "H-Mine",
   carma: "CARMA",
   charm: "CHARM",
+  closet: "CLOSET",
   maxminer: "MaxMiner",
 };
 
@@ -62,12 +65,12 @@ export function ResultsTable({ rules, algorithm, params }: ResultsTableProps) {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-fade-in">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h2 className="text-2xl font-bold mb-1">Discovered Rules</h2>
           <p className="text-muted-foreground text-sm">
-            Found {rules.length} association rules using {algorithmNames[algorithm]}
+            Found {rules.length} association rules using {algorithmNames[algorithm] || algorithm}
           </p>
         </div>
         <div className="flex items-center gap-4 text-sm">
@@ -75,40 +78,38 @@ export function ResultsTable({ rules, algorithm, params }: ResultsTableProps) {
             <TrendingUp className="w-4 h-4 text-primary" />
             <span>Avg Confidence:</span>
             <span className="font-mono text-primary">
-              {(
-                (rules.reduce((acc, r) => acc + r.confidence, 0) / rules.length) *
-                100
-              ).toFixed(1)}
-              %
+              {rules.length > 0 
+                ? ((rules.reduce((acc, r) => acc + r.confidence, 0) / rules.length) * 100).toFixed(1)
+                : 0}%
             </span>
           </div>
         </div>
       </div>
 
       {/* Stats cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="p-4 rounded-xl bg-secondary/50 border border-border">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 stagger-children">
+        <div className="p-4 rounded-xl bg-secondary/50 border border-border card-hover hover-lift">
           <p className="text-sm text-muted-foreground">Total Rules</p>
           <p className="text-2xl font-bold">{rules.length}</p>
         </div>
-        <div className="p-4 rounded-xl bg-secondary/50 border border-border">
+        <div className="p-4 rounded-xl bg-secondary/50 border border-border card-hover hover-lift">
           <p className="text-sm text-muted-foreground">Min Support</p>
           <p className="text-2xl font-bold">{(params.minSupport * 100).toFixed(0)}%</p>
         </div>
-        <div className="p-4 rounded-xl bg-secondary/50 border border-border">
+        <div className="p-4 rounded-xl bg-secondary/50 border border-border card-hover hover-lift">
           <p className="text-sm text-muted-foreground">Min Confidence</p>
           <p className="text-2xl font-bold">{(params.minConfidence * 100).toFixed(0)}%</p>
         </div>
-        <div className="p-4 rounded-xl bg-secondary/50 border border-border">
+        <div className="p-4 rounded-xl bg-secondary/50 border border-border card-hover hover-lift">
           <p className="text-sm text-muted-foreground">Highest Lift</p>
           <p className="text-2xl font-bold text-primary">
-            {Math.max(...rules.map((r) => r.lift)).toFixed(2)}
+            {rules.length > 0 ? Math.max(...rules.map((r) => r.lift)).toFixed(2) : "—"}
           </p>
         </div>
       </div>
 
       {/* Table */}
-      <div className="overflow-x-auto rounded-xl border border-border">
+      <div className="overflow-x-auto rounded-xl border border-border glass-card animate-fade-in-scale" style={{ animationDelay: "0.2s" }}>
         <table className="w-full">
           <thead className="bg-secondary/50">
             <tr>
@@ -119,7 +120,7 @@ export function ResultsTable({ rules, algorithm, params }: ResultsTableProps) {
                   variant="ghost"
                   size="sm"
                   onClick={() => handleSort("support")}
-                  className="gap-1 -ml-2"
+                  className="gap-1 -ml-2 hover:bg-primary/10"
                 >
                   Support <SortIcon columnKey="support" />
                 </Button>
@@ -129,7 +130,7 @@ export function ResultsTable({ rules, algorithm, params }: ResultsTableProps) {
                   variant="ghost"
                   size="sm"
                   onClick={() => handleSort("confidence")}
-                  className="gap-1 -ml-2"
+                  className="gap-1 -ml-2 hover:bg-primary/10"
                 >
                   Confidence <SortIcon columnKey="confidence" />
                 </Button>
@@ -139,7 +140,7 @@ export function ResultsTable({ rules, algorithm, params }: ResultsTableProps) {
                   variant="ghost"
                   size="sm"
                   onClick={() => handleSort("lift")}
-                  className="gap-1 -ml-2"
+                  className="gap-1 -ml-2 hover:bg-primary/10"
                 >
                   Lift <SortIcon columnKey="lift" />
                 </Button>
@@ -150,7 +151,8 @@ export function ResultsTable({ rules, algorithm, params }: ResultsTableProps) {
             {sortedRules.map((rule, index) => (
               <tr
                 key={rule.id}
-                className="border-t border-border/50 hover:bg-secondary/30 transition-colors"
+                className="border-t border-border/50 table-row-animated"
+                style={{ animationDelay: `${index * 0.02}s` }}
               >
                 <td className="py-3 px-4 text-muted-foreground">{index + 1}</td>
                 <td className="py-3 px-4">
@@ -159,7 +161,7 @@ export function ResultsTable({ rules, algorithm, params }: ResultsTableProps) {
                       {rule.antecedent.map((item) => (
                         <span
                           key={item}
-                          className="px-2 py-0.5 rounded bg-primary/20 text-primary text-sm"
+                          className="px-2 py-0.5 rounded bg-primary/20 text-primary text-sm transition-all duration-200 hover:bg-primary/30"
                         >
                           {item}
                         </span>
@@ -170,7 +172,7 @@ export function ResultsTable({ rules, algorithm, params }: ResultsTableProps) {
                       {rule.consequent.map((item) => (
                         <span
                           key={item}
-                          className="px-2 py-0.5 rounded bg-secondary text-sm"
+                          className="px-2 py-0.5 rounded bg-secondary text-sm transition-all duration-200 hover:bg-secondary/80"
                         >
                           {item}
                         </span>
@@ -194,7 +196,7 @@ export function ResultsTable({ rules, algorithm, params }: ResultsTableProps) {
       </div>
 
       {rules.length === 0 && (
-        <div className="text-center py-12 text-muted-foreground">
+        <div className="text-center py-12 text-muted-foreground animate-fade-in">
           <p>No rules found with the current parameters.</p>
           <p className="text-sm">Try lowering the support or confidence thresholds.</p>
         </div>
