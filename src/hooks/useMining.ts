@@ -8,6 +8,13 @@ interface MiningResult {
   itemsets: FrequentItemset[];
   transactionCount: number;
   uniqueItems: number;
+  executionTime?: {
+    load_seconds: number;
+    mine_seconds: number;
+    total_seconds: number;
+  };
+  wasPruned?: boolean;
+  originalRulesCount?: number;
 }
 
 interface UploadResult {
@@ -18,6 +25,29 @@ interface UploadResult {
     unique_items: number;
     avg_items_per_transaction: number;
   };
+  profile?: DatasetProfile;
+}
+
+interface DatasetProfile {
+  n_transactions: number;
+  n_unique_items: number;
+  avg_transaction_length: number;
+  density: number;
+  sparsity: number;
+  estimated_memory_mb: number;
+  is_large: boolean;
+  is_sparse: boolean;
+}
+
+interface AlgorithmRecommendation {
+  recommendations: Array<{
+    algorithm: string;
+    score: number;
+    reason: string;
+  }>;
+  rule_explosion_risk: string;
+  top_pick: string;
+  top_reason: string;
 }
 
 interface PreprocessOptions {
@@ -25,6 +55,7 @@ interface PreprocessOptions {
   minItems?: number;
   maxItems?: number;
   excludeItems?: string[];
+  minItemFrequency?: number;
 }
 
 export function useMining() {
@@ -32,6 +63,8 @@ export function useMining() {
   const [error, setError] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
   const [datasetStats, setDatasetStats] = useState<UploadResult["stats"] | null>(null);
+  const [datasetProfile, setDatasetProfile] = useState<DatasetProfile | null>(null);
+  const [recommendation, setRecommendation] = useState<AlgorithmRecommendation | null>(null);
 
   const uploadDataset = async (file: File): Promise<UploadResult | null> => {
     setError(null);
@@ -52,6 +85,9 @@ export function useMining() {
       }
 
       setDatasetStats(data.stats);
+      if (data.profile) {
+        setDatasetProfile(data.profile);
+      }
       return data;
     } catch (err) {
       console.error("Upload error:", err);
@@ -74,6 +110,7 @@ export function useMining() {
           min_items: options.minItems,
           max_items: options.maxItems,
           exclude_items: options.excludeItems,
+          min_item_frequency: options.minItemFrequency,
         }),
       });
 
@@ -84,11 +121,43 @@ export function useMining() {
       }
 
       setDatasetStats(data.stats);
+      if (data.profile) {
+        setDatasetProfile(data.profile);
+      }
       return true;
     } catch (err) {
       console.error("Preprocessing error:", err);
       setError(err instanceof Error ? err.message : "Failed to preprocess dataset");
       return false;
+    }
+  };
+
+  const getRecommendation = async (minSupport: number = 0.1): Promise<AlgorithmRecommendation | null> => {
+    setError(null);
+    
+    try {
+      const response = await fetch(`${API_BASE}/api/recommend`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ min_support: minSupport }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Recommendation failed");
+      }
+
+      setRecommendation(data.recommendation);
+      if (data.profile) {
+        setDatasetProfile(data.profile);
+      }
+      return data.recommendation;
+    } catch (err) {
+      console.error("Recommendation error:", err);
+      return null;
     }
   };
 
@@ -118,6 +187,7 @@ export function useMining() {
           algorithm: algorithm.toLowerCase(),
           min_support: params.minSupport,
           min_confidence: params.minConfidence,
+          max_rules: 5000,
         }),
       });
 
@@ -130,7 +200,7 @@ export function useMining() {
       }
 
       setProgress(100);
-      console.log(`Mining complete: ${data.rules_count} rules discovered`);
+      console.log(`Mining complete: ${data.rules_count} rules discovered in ${data.execution_time?.total_seconds}s`);
 
       // Convert API response to our format
       const rules: AssociationRule[] = data.rules.map((rule: {
@@ -167,6 +237,9 @@ export function useMining() {
         itemsets: Array.from(itemsetMap.values()),
         transactionCount: datasetStats?.transactions || 0,
         uniqueItems: datasetStats?.unique_items || 0,
+        executionTime: data.execution_time,
+        wasPruned: data.was_pruned,
+        originalRulesCount: data.original_rules_count,
       };
     } catch (err) {
       console.error("Mining error:", err);
@@ -190,11 +263,14 @@ export function useMining() {
   return {
     uploadDataset,
     preprocessDataset,
+    getRecommendation,
     runMining,
     checkHealth,
     isRunning,
     error,
     progress,
     datasetStats,
+    datasetProfile,
+    recommendation,
   };
 }

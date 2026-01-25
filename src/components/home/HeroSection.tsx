@@ -45,26 +45,54 @@ export function HeroSection() {
             ))}
           </div>
 
-          {/* Main heading */}
+          {/* Main heading with gradient animation */}
           <h1 
             className="text-4xl md:text-6xl lg:text-7xl font-bold mb-6 leading-tight opacity-0 animate-fade-in"
             style={{ animationDelay: "0.2s" }}
           >
-            The Most Advanced
+            <span className="inline-block animate-fade-in" style={{ animationDelay: "0.1s" }}>The</span>{" "}
+            <span className="inline-block animate-fade-in" style={{ animationDelay: "0.15s" }}>Most</span>{" "}
+            <span className="inline-block animate-fade-in" style={{ animationDelay: "0.2s" }}>Advanced</span>
             <br />
-            <span className="gradient-text">Data Mining & Rule</span>
+            <span className="inline-block gradient-text animate-fade-in" style={{ animationDelay: "0.25s" }}>Data</span>{" "}
+            <span className="inline-block gradient-text animate-fade-in" style={{ animationDelay: "0.3s" }}>Mining</span>{" "}
+            <span className="inline-block gradient-text animate-fade-in" style={{ animationDelay: "0.35s" }}>&</span>{" "}
+            <span className="inline-block gradient-text animate-fade-in" style={{ animationDelay: "0.4s" }}>Rule</span>
             <br />
-            Discovery Platform
+            <span className="inline-block animate-fade-in" style={{ animationDelay: "0.45s" }}>Discovery</span>{" "}
+            <span className="inline-block animate-fade-in" style={{ animationDelay: "0.5s" }}>Platform</span>
           </h1>
 
-          {/* Subtitle */}
+          {/* Subtitle with word-by-word animation */}
           <p 
-            className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-10 opacity-0 animate-fade-in"
+            className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-10 opacity-0 animate-fade-in leading-relaxed"
             style={{ animationDelay: "0.4s" }}
           >
-            Discover hidden patterns with Apriori, FP-Growth, ECLAT, and more.
-            Upload your data, choose algorithms, and extract actionable insights
-            — all in one powerful, free platform.
+            <span className="inline-block animate-fade-in" style={{ animationDelay: "0.55s" }}>Discover</span>{" "}
+            <span className="inline-block animate-fade-in" style={{ animationDelay: "0.57s" }}>hidden</span>{" "}
+            <span className="inline-block animate-fade-in" style={{ animationDelay: "0.59s" }}>patterns</span>{" "}
+            <span className="inline-block animate-fade-in" style={{ animationDelay: "0.61s" }}>with</span>{" "}
+            <span className="inline-block animate-fade-in font-semibold text-primary" style={{ animationDelay: "0.63s" }}>Apriori,</span>{" "}
+            <span className="inline-block animate-fade-in font-semibold text-primary" style={{ animationDelay: "0.65s" }}>FP-Growth,</span>{" "}
+            <span className="inline-block animate-fade-in font-semibold text-primary" style={{ animationDelay: "0.67s" }}>ECLAT,</span>{" "}
+            <span className="inline-block animate-fade-in" style={{ animationDelay: "0.69s" }}>and</span>{" "}
+            <span className="inline-block animate-fade-in" style={{ animationDelay: "0.71s" }}>more.</span>{" "}
+            <span className="inline-block animate-fade-in" style={{ animationDelay: "0.73s" }}>Upload</span>{" "}
+            <span className="inline-block animate-fade-in" style={{ animationDelay: "0.75s" }}>your</span>{" "}
+            <span className="inline-block animate-fade-in" style={{ animationDelay: "0.77s" }}>data,</span>{" "}
+            <span className="inline-block animate-fade-in" style={{ animationDelay: "0.79s" }}>choose</span>{" "}
+            <span className="inline-block animate-fade-in" style={{ animationDelay: "0.81s" }}>algorithms,</span>{" "}
+            <span className="inline-block animate-fade-in" style={{ animationDelay: "0.83s" }}>and</span>{" "}
+            <span className="inline-block animate-fade-in" style={{ animationDelay: "0.85s" }}>extract</span>{" "}
+            <span className="inline-block animate-fade-in" style={{ animationDelay: "0.87s" }}>actionable</span>{" "}
+            <span className="inline-block animate-fade-in" style={{ animationDelay: "0.89s" }}>insights</span>{" "}
+            <span className="inline-block animate-fade-in" style={{ animationDelay: "0.91s" }}>—</span>{" "}
+            <span className="inline-block animate-fade-in" style={{ animationDelay: "0.93s" }}>all</span>{" "}
+            <span className="inline-block animate-fade-in" style={{ animationDelay: "0.95s" }}>in</span>{" "}
+            <span className="inline-block animate-fade-in" style={{ animationDelay: "0.97s" }}>one</span>{" "}
+            <span className="inline-block animate-fade-in font-semibold" style={{ animationDelay: "0.99s" }}>powerful,</span>{" "}
+            <span className="inline-block animate-fade-in font-semibold text-primary" style={{ animationDelay: "1.01s" }}>free</span>{" "}
+            <span className="inline-block animate-fade-in" style={{ animationDelay: "1.03s" }}>platform.</span>
           </p>
 
           {/* CTA Buttons */}
@@ -79,7 +107,7 @@ export function HeroSection() {
               </Link>
             </Button>
             <Button variant="heroOutline" size="xl" asChild className="hover-lift">
-              <Link to="/docs">
+              <Link to="/dashboard">
                 <Upload className="w-5 h-5" /> Upload Dataset
               </Link>
             </Button>
@@ -90,10 +118,11 @@ export function HeroSection() {
             className="grid grid-cols-2 md:grid-cols-4 gap-4 stagger-children"
             style={{ animationDelay: "0.6s" }}
           >
-            {features.map((feature) => (
+            {features.map((feature, index) => (
               <div
                 key={feature.label}
-                className="glass-card rounded-xl p-4 card-hover hover-lift"
+                className="glass-card rounded-xl p-4 card-hover hover-lift opacity-0 animate-fade-in"
+                style={{ animationDelay: `${1.1 + index * 0.1}s` }}
               >
                 <feature.icon className="w-6 h-6 text-primary mb-2 mx-auto transition-transform duration-300 group-hover:scale-110" />
                 <p className="font-medium text-sm">{feature.label}</p>
