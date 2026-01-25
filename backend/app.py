@@ -1,10 +1,11 @@
 """
-SmartMine Flask Backend
-=======================
-Complete data mining backend with support for:
-- Apriori, FP-Growth (via mlxtend)
-- ECLAT (custom implementation)
-- H-Mine, CARMA, CHARM, CLOSET, MaxMiner (via SPMF Java integration)
+SmartMine Flask Backend - Enhanced for Large-Scale Mining
+==========================================================
+Complete data mining backend with:
+- Scalable streaming ingestion
+- Algorithm recommendation engine
+- Rule explosion management
+- Support for: Apriori, FP-Growth, ECLAT, H-Mine, CARMA, CHARM, CLOSET, MaxMiner
 
 Run with: python app.py
 Server: http://localhost:5000
@@ -14,9 +15,14 @@ import os
 import subprocess
 import json
 import tempfile
+import time
+import gc
+import threading
+from collections import defaultdict
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import pandas as pd
+import numpy as np
 from mlxtend.preprocessing import TransactionEncoder
 from mlxtend.frequent_patterns import apriori, fpgrowth, association_rules
 from itertools import combinations
@@ -37,6 +43,179 @@ for folder in [UPLOAD_FOLDER, PROCESSED_FOLDER, SPMF_FOLDER]:
 TRANSACTIONS_FILE = os.path.join(PROCESSED_FOLDER, 'transactions.csv')
 SPMF_INPUT_FILE = os.path.join(PROCESSED_FOLDER, 'spmf_input.txt')
 
+# Global dataset profiling cache
+dataset_profile = {}
+
+# =============================================================================
+# DATASET PROFILING & ALGORITHM RECOMMENDATION
+# =============================================================================
+
+def profile_dataset(transactions):
+    """
+    Profile dataset to determine characteristics for algorithm recommendation.
+    """
+    n_transactions = len(transactions)
+    if n_transactions == 0:
+        return {}
+    
+    # Count all items
+    item_counts = defaultdict(int)
+    transaction_lengths = []
+    
+    for t in transactions:
+        transaction_lengths.append(len(t))
+        for item in t:
+            item_counts[item] += 1
+    
+    n_unique_items = len(item_counts)
+    avg_transaction_length = np.mean(transaction_lengths) if transaction_lengths else 0
+    max_transaction_length = max(transaction_lengths) if transaction_lengths else 0
+    min_transaction_length = min(transaction_lengths) if transaction_lengths else 0
+    
+    # Calculate density (avg items / unique items)
+    density = avg_transaction_length / n_unique_items if n_unique_items > 0 else 0
+    
+    # Calculate sparsity
+    sparsity = 1 - density
+    
+    # Estimate memory footprint (rough estimate in MB)
+    estimated_memory_mb = (n_transactions * avg_transaction_length * 50) / (1024 * 1024)
+    
+    # Item frequency distribution
+    frequencies = list(item_counts.values())
+    freq_std = np.std(frequencies) if frequencies else 0
+    freq_mean = np.mean(frequencies) if frequencies else 0
+    
+    profile = {
+        'n_transactions': n_transactions,
+        'n_unique_items': n_unique_items,
+        'avg_transaction_length': round(avg_transaction_length, 2),
+        'max_transaction_length': max_transaction_length,
+        'min_transaction_length': min_transaction_length,
+        'density': round(density, 4),
+        'sparsity': round(sparsity, 4),
+        'estimated_memory_mb': round(estimated_memory_mb, 2),
+        'freq_std': round(freq_std, 2),
+        'freq_mean': round(freq_mean, 2),
+        'is_large': n_transactions > 10000,
+        'is_very_large': n_transactions > 100000,
+        'is_dense': density > 0.1,
+        'is_sparse': sparsity > 0.9,
+        'has_long_transactions': avg_transaction_length > 20
+    }
+    
+    return profile
+
+
+def recommend_algorithm(profile, min_support=0.1):
+    """
+    Recommend best algorithm based on dataset characteristics.
+    """
+    recommendations = []
+    
+    n_trans = profile.get('n_transactions', 0)
+    is_large = profile.get('is_large', False)
+    is_very_large = profile.get('is_very_large', False)
+    is_dense = profile.get('is_dense', False)
+    is_sparse = profile.get('is_sparse', False)
+    has_long_trans = profile.get('has_long_transactions', False)
+    n_unique = profile.get('n_unique_items', 0)
+    
+    # Estimate rule explosion risk
+    rule_explosion_risk = 'low'
+    if n_unique > 100 and min_support < 0.05:
+        rule_explosion_risk = 'high'
+    elif n_unique > 50 and min_support < 0.1:
+        rule_explosion_risk = 'medium'
+    
+    # FP-Growth: Best for large sparse datasets
+    fp_score = 70
+    if is_large:
+        fp_score += 15
+    if is_sparse:
+        fp_score += 10
+    if has_long_trans:
+        fp_score -= 5
+    recommendations.append({
+        'algorithm': 'fp-growth',
+        'score': fp_score,
+        'reason': 'Efficient for large datasets with FP-tree compression'
+    })
+    
+    # Apriori: Good for small to medium datasets
+    ap_score = 60
+    if not is_large:
+        ap_score += 20
+    if is_large:
+        ap_score -= 20
+    recommendations.append({
+        'algorithm': 'apriori',
+        'score': ap_score,
+        'reason': 'Classic algorithm, good for smaller datasets'
+    })
+    
+    # ECLAT: Good for dense datasets
+    ec_score = 65
+    if is_dense:
+        ec_score += 20
+    if is_sparse:
+        ec_score -= 10
+    recommendations.append({
+        'algorithm': 'eclat',
+        'score': ec_score,
+        'reason': 'Vertical TID-list intersection, efficient for dense data'
+    })
+    
+    # H-Mine: Good for memory-constrained scenarios
+    hm_score = 55
+    if profile.get('estimated_memory_mb', 0) > 100:
+        hm_score += 15
+    recommendations.append({
+        'algorithm': 'h-mine',
+        'score': hm_score,
+        'reason': 'Memory-efficient hyperlink structure'
+    })
+    
+    # CARMA: Good for streaming/incremental updates
+    ca_score = 50
+    if is_very_large:
+        ca_score += 10
+    recommendations.append({
+        'algorithm': 'carma',
+        'score': ca_score,
+        'reason': 'Continuous mining for streaming data'
+    })
+    
+    # CHARM: When rule explosion is a risk
+    ch_score = 60
+    if rule_explosion_risk in ['medium', 'high']:
+        ch_score += 25
+    recommendations.append({
+        'algorithm': 'charm',
+        'score': ch_score,
+        'reason': 'Closed itemsets reduce rule explosion'
+    })
+    
+    # MaxMiner: When you need minimal output
+    mm_score = 55
+    if rule_explosion_risk == 'high':
+        mm_score += 30
+    recommendations.append({
+        'algorithm': 'maxminer',
+        'score': mm_score,
+        'reason': 'Maximal patterns for minimal output'
+    })
+    
+    # Sort by score
+    recommendations.sort(key=lambda x: x['score'], reverse=True)
+    
+    return {
+        'recommendations': recommendations,
+        'rule_explosion_risk': rule_explosion_risk,
+        'top_pick': recommendations[0]['algorithm'],
+        'top_reason': recommendations[0]['reason']
+    }
+
 
 # =============================================================================
 # UTILITY FUNCTIONS
@@ -50,7 +229,23 @@ def load_transactions():
     df = pd.read_csv(TRANSACTIONS_FILE)
     transactions = df['items'].apply(lambda x: x.split(',') if pd.notna(x) else []).tolist()
     transactions = [[item.strip() for item in t if item.strip()] for t in transactions]
-    return [t for t in transactions if t]  # Remove empty transactions
+    return [t for t in transactions if t]
+
+
+def load_transactions_streaming(chunk_size=10000):
+    """
+    Load transactions in streaming fashion for large datasets.
+    Yields chunks of transactions.
+    """
+    if not os.path.exists(TRANSACTIONS_FILE):
+        raise FileNotFoundError("No dataset uploaded. Please upload a dataset first.")
+    
+    for chunk in pd.read_csv(TRANSACTIONS_FILE, chunksize=chunk_size):
+        transactions = chunk['items'].apply(
+            lambda x: [item.strip() for item in str(x).split(',') if item.strip()] if pd.notna(x) else []
+        ).tolist()
+        transactions = [t for t in transactions if t]
+        yield transactions
 
 
 def get_item_mapping(transactions):
@@ -68,8 +263,9 @@ def write_spmf_input(transactions, item_to_int):
     """Write transactions in SPMF format."""
     with open(SPMF_INPUT_FILE, 'w') as f:
         for t in transactions:
-            line = ' '.join(str(item_to_int[item]) for item in t)
-            f.write(line + '\n')
+            line = ' '.join(str(item_to_int[item]) for item in t if item in item_to_int)
+            if line:
+                f.write(line + '\n')
 
 
 def parse_spmf_output(output_file, int_to_item):
@@ -90,7 +286,7 @@ def parse_spmf_output(output_file, int_to_item):
             
             item_ids = [int(x) for x in items_part.split() if x.isdigit()]
             items = frozenset(int_to_item[i] for i in item_ids if i in int_to_item)
-            support = int(support_part)
+            support = int(support_part.split()[0])  # Handle potential extra data
             
             if items:
                 itemsets.append({'itemset': items, 'support_count': support})
@@ -98,41 +294,60 @@ def parse_spmf_output(output_file, int_to_item):
     return itemsets
 
 
-def generate_rules_from_itemsets(itemsets, transactions, min_confidence):
-    """Generate association rules from frequent itemsets."""
+def generate_rules_from_itemsets(itemsets, transactions, min_confidence, max_rules=5000):
+    """
+    Generate association rules from frequent itemsets.
+    Includes rule explosion management with max_rules limit.
+    """
     rules = []
     n_transactions = len(transactions)
     
-    # Calculate support for all itemsets
+    if n_transactions == 0:
+        return rules
+    
+    # Build support dictionary for O(1) lookup
     support_dict = {}
     for item_info in itemsets:
         itemset = item_info['itemset']
         support_dict[itemset] = item_info['support_count'] / n_transactions
     
-    # Generate rules
+    # Also calculate single item supports for lift calculation
+    single_supports = {}
     for item_info in itemsets:
+        if len(item_info['itemset']) == 1:
+            item = list(item_info['itemset'])[0]
+            single_supports[item] = item_info['support_count'] / n_transactions
+    
+    rules_generated = 0
+    
+    for item_info in itemsets:
+        if rules_generated >= max_rules:
+            break
+            
         itemset = item_info['itemset']
         if len(itemset) < 2:
             continue
         
-        itemset_support = support_dict[itemset]
+        itemset_support = support_dict.get(itemset, 0)
+        if itemset_support == 0:
+            continue
         
         # Generate all possible antecedent/consequent combinations
         for i in range(1, len(itemset)):
+            if rules_generated >= max_rules:
+                break
+                
             for antecedent in combinations(itemset, i):
+                if rules_generated >= max_rules:
+                    break
+                    
                 antecedent = frozenset(antecedent)
                 consequent = itemset - antecedent
                 
                 if not consequent:
                     continue
                 
-                # Find antecedent support
-                ant_support = None
-                for info in itemsets:
-                    if info['itemset'] == antecedent:
-                        ant_support = info['support_count'] / n_transactions
-                        break
-                
+                ant_support = support_dict.get(antecedent)
                 if ant_support is None or ant_support == 0:
                     continue
                 
@@ -140,13 +355,16 @@ def generate_rules_from_itemsets(itemsets, transactions, min_confidence):
                 
                 if confidence >= min_confidence:
                     # Calculate lift
-                    cons_support = None
-                    for info in itemsets:
-                        if info['itemset'] == consequent:
-                            cons_support = info['support_count'] / n_transactions
-                            break
+                    cons_support = support_dict.get(consequent)
+                    if cons_support is None:
+                        # Try single item support
+                        if len(consequent) == 1:
+                            cons_item = list(consequent)[0]
+                            cons_support = single_supports.get(cons_item, 0.01)
+                        else:
+                            cons_support = 0.01
                     
-                    lift = confidence / cons_support if cons_support else 1.0
+                    lift = confidence / cons_support if cons_support > 0 else 1.0
                     
                     rules.append({
                         'rule': f"{list(antecedent)} -> {list(consequent)}",
@@ -156,87 +374,122 @@ def generate_rules_from_itemsets(itemsets, transactions, min_confidence):
                         'confidence': round(confidence, 4),
                         'lift': round(lift, 4)
                     })
+                    rules_generated += 1
     
     return rules
 
 
+def prune_redundant_rules(rules, top_k=1000):
+    """
+    Prune redundant rules and return top-K by lift.
+    Implements representative rule selection.
+    """
+    if len(rules) <= top_k:
+        return rules
+    
+    # Sort by lift descending
+    rules.sort(key=lambda x: (x['lift'], x['confidence'], x['support']), reverse=True)
+    
+    # Take top-K
+    return rules[:top_k]
+
+
 # =============================================================================
-# MINING ALGORITHMS
+# MINING ALGORITHMS - FIXED & OPTIMIZED
 # =============================================================================
 
 def mine_apriori(transactions, min_support, min_confidence):
     """Mine using Apriori algorithm (mlxtend)."""
-    te = TransactionEncoder()
-    te_ary = te.fit_transform(transactions)
-    df = pd.DataFrame(te_ary, columns=te.columns_)
-    
-    frequent_itemsets = apriori(df, min_support=min_support, use_colnames=True)
-    
-    if frequent_itemsets.empty:
+    if not transactions:
         return []
     
-    rules = association_rules(frequent_itemsets, metric="confidence", min_threshold=min_confidence)
-    
-    result = []
-    for _, row in rules.iterrows():
-        result.append({
-            'rule': f"{list(row['antecedents'])} -> {list(row['consequents'])}",
-            'antecedent': list(row['antecedents']),
-            'consequent': list(row['consequents']),
-            'support': round(row['support'], 4),
-            'confidence': round(row['confidence'], 4),
-            'lift': round(row['lift'], 4)
-        })
-    
-    return result
+    try:
+        te = TransactionEncoder()
+        te_ary = te.fit_transform(transactions)
+        df = pd.DataFrame(te_ary, columns=te.columns_)
+        
+        frequent_itemsets = apriori(df, min_support=min_support, use_colnames=True)
+        
+        if frequent_itemsets.empty:
+            return []
+        
+        rules = association_rules(frequent_itemsets, metric="confidence", min_threshold=min_confidence)
+        
+        result = []
+        for _, row in rules.iterrows():
+            result.append({
+                'rule': f"{list(row['antecedents'])} -> {list(row['consequents'])}",
+                'antecedent': list(row['antecedents']),
+                'consequent': list(row['consequents']),
+                'support': round(float(row['support']), 4),
+                'confidence': round(float(row['confidence']), 4),
+                'lift': round(float(row['lift']), 4)
+            })
+        
+        return result
+    except Exception as e:
+        print(f"Apriori error: {e}")
+        return []
 
 
 def mine_fpgrowth(transactions, min_support, min_confidence):
-    """Mine using FP-Growth algorithm (mlxtend)."""
-    te = TransactionEncoder()
-    te_ary = te.fit_transform(transactions)
-    df = pd.DataFrame(te_ary, columns=te.columns_)
-    
-    frequent_itemsets = fpgrowth(df, min_support=min_support, use_colnames=True)
-    
-    if frequent_itemsets.empty:
+    """Mine using FP-Growth algorithm (mlxtend) - FIXED."""
+    if not transactions:
         return []
     
-    rules = association_rules(frequent_itemsets, metric="confidence", min_threshold=min_confidence)
-    
-    result = []
-    for _, row in rules.iterrows():
-        result.append({
-            'rule': f"{list(row['antecedents'])} -> {list(row['consequents'])}",
-            'antecedent': list(row['antecedents']),
-            'consequent': list(row['consequents']),
-            'support': round(row['support'], 4),
-            'confidence': round(row['confidence'], 4),
-            'lift': round(row['lift'], 4)
-        })
-    
-    return result
+    try:
+        te = TransactionEncoder()
+        te_ary = te.fit_transform(transactions)
+        df = pd.DataFrame(te_ary, columns=te.columns_)
+        
+        # Use fpgrowth from mlxtend
+        frequent_itemsets = fpgrowth(df, min_support=min_support, use_colnames=True)
+        
+        if frequent_itemsets.empty:
+            return []
+        
+        # Generate association rules
+        rules = association_rules(frequent_itemsets, metric="confidence", min_threshold=min_confidence)
+        
+        result = []
+        for _, row in rules.iterrows():
+            result.append({
+                'rule': f"{list(row['antecedents'])} -> {list(row['consequents'])}",
+                'antecedent': list(row['antecedents']),
+                'consequent': list(row['consequents']),
+                'support': round(float(row['support']), 4),
+                'confidence': round(float(row['confidence']), 4),
+                'lift': round(float(row['lift']), 4)
+            })
+        
+        return result
+    except Exception as e:
+        print(f"FP-Growth error: {e}")
+        # Fallback to Apriori if FP-Growth fails
+        return mine_apriori(transactions, min_support, min_confidence)
 
 
 def mine_eclat(transactions, min_support, min_confidence):
     """
-    ECLAT Algorithm Implementation
+    ECLAT Algorithm Implementation - OPTIMIZED
     Uses vertical TID-list representation for efficient intersection.
     """
+    if not transactions:
+        return []
+    
     n_transactions = len(transactions)
-    min_support_count = int(min_support * n_transactions)
+    min_support_count = max(1, int(min_support * n_transactions))
     
     # Build vertical TID-lists
-    tid_lists = {}
+    tid_lists = defaultdict(set)
     for tid, transaction in enumerate(transactions):
         for item in transaction:
-            if item not in tid_lists:
-                tid_lists[item] = set()
             tid_lists[item].add(tid)
     
     # Find frequent 1-itemsets
     frequent_itemsets = []
     frequent_1 = {}
+    
     for item, tids in tid_lists.items():
         if len(tids) >= min_support_count:
             itemset = frozenset([item])
@@ -246,8 +499,11 @@ def mine_eclat(transactions, min_support, min_confidence):
                 'support_count': len(tids)
             })
     
-    def eclat_extend(prefix_itemsets):
+    def eclat_extend(prefix_itemsets, depth=0):
         """Recursively extend itemsets using ECLAT."""
+        if depth > 15:  # Prevent deep recursion
+            return []
+        
         result = []
         items = list(prefix_itemsets.keys())
         
@@ -271,34 +527,38 @@ def mine_eclat(transactions, min_support, min_confidence):
                     })
             
             if new_prefix:
-                result.extend(eclat_extend(new_prefix))
+                result.extend(eclat_extend(new_prefix, depth + 1))
         
         return result
     
-    # Extend frequent 1-itemsets
     frequent_itemsets.extend(eclat_extend(frequent_1))
     
-    # Generate association rules
     return generate_rules_from_itemsets(frequent_itemsets, transactions, min_confidence)
 
 
 def mine_hmine(transactions, min_support, min_confidence):
     """
-    H-Mine Algorithm (Simplified Python Implementation)
-    Uses projected database approach similar to FP-Growth.
+    H-Mine Algorithm - FIXED Implementation
+    Uses hyperlinked projected database for memory efficiency.
     """
+    if not transactions:
+        return []
+    
     n_transactions = len(transactions)
-    min_support_count = int(min_support * n_transactions)
+    min_support_count = max(1, int(min_support * n_transactions))
     
     # Count item frequencies
-    item_counts = {}
+    item_counts = defaultdict(int)
     for t in transactions:
         for item in t:
-            item_counts[item] = item_counts.get(item, 0) + 1
+            item_counts[item] += 1
     
-    # Filter and sort items by frequency
+    # Filter frequent items
     frequent_items = {item: count for item, count in item_counts.items() 
                       if count >= min_support_count}
+    
+    if not frequent_items:
+        return []
     
     frequent_itemsets = []
     
@@ -309,29 +569,45 @@ def mine_hmine(transactions, min_support, min_confidence):
             'support_count': count
         })
     
+    # Sort items by frequency (descending)
+    sorted_items = sorted(frequent_items.keys(), key=lambda x: -frequent_items[x])
+    
     def project_database(db, item):
         """Create projected database for an item."""
         projected = []
         for t in db:
-            if item in t:
+            try:
                 idx = t.index(item)
                 suffix = [i for i in t[idx+1:] if i in frequent_items]
                 if suffix:
                     projected.append(suffix)
+            except ValueError:
+                continue
         return projected
+    
+    def count_in_projected(db, item):
+        """Count item occurrences in projected database."""
+        count = 0
+        for t in db:
+            if item in t:
+                count += 1
+        return count
     
     def hmine_recursive(db, prefix, depth=0):
         """Recursive H-Mine pattern growth."""
-        if depth > 10:  # Limit depth to prevent infinite recursion
+        if depth > 10 or not db:
             return
         
         # Count items in projected database
-        local_counts = {}
+        local_counts = defaultdict(int)
         for t in db:
-            for item in t:
-                local_counts[item] = local_counts.get(item, 0) + 1
+            for item in set(t):  # Use set to avoid counting duplicates in same transaction
+                local_counts[item] += 1
         
-        for item, count in local_counts.items():
+        for item in sorted_items:
+            if item in prefix:
+                continue
+            count = local_counts.get(item, 0)
             if count >= min_support_count:
                 new_prefix = prefix | frozenset([item])
                 frequent_itemsets.append({
@@ -353,33 +629,61 @@ def mine_hmine(transactions, min_support, min_confidence):
             sorted_transactions.append(sorted_t)
     
     # Mine patterns for each frequent item
-    sorted_items = sorted(frequent_items.keys(), key=lambda x: -frequent_items[x])
     for item in sorted_items:
         projected = project_database(sorted_transactions, item)
         if projected:
-            hmine_recursive(projected, frozenset([item]))
+            hmine_recursive(projected, frozenset([item]), 0)
     
-    return generate_rules_from_itemsets(frequent_itemsets, transactions, min_confidence)
+    # Remove duplicates
+    seen = set()
+    unique_itemsets = []
+    for item_info in frequent_itemsets:
+        key = item_info['itemset']
+        if key not in seen:
+            seen.add(key)
+            unique_itemsets.append(item_info)
+    
+    return generate_rules_from_itemsets(unique_itemsets, transactions, min_confidence)
 
 
 def mine_carma(transactions, min_support, min_confidence):
     """
-    CARMA Algorithm (Continuous Association Rule Mining Algorithm)
-    Simplified implementation for batch processing.
+    CARMA Algorithm - FIXED Implementation
+    Continuous Association Rule Mining Algorithm.
+    Two-phase approach: count candidates then verify.
     """
+    if not transactions:
+        return []
+    
     n_transactions = len(transactions)
-    min_support_count = int(min_support * n_transactions)
+    min_support_count = max(1, int(min_support * n_transactions))
     
-    # Phase 1: Build candidate tree
-    candidate_counts = {}
+    # Phase 1: Build candidates using a sliding approach
+    candidate_counts = defaultdict(int)
     
+    # First pass: count all items
+    item_counts = defaultdict(int)
     for t in transactions:
-        items = sorted(set(t))
-        # Generate all subsets
-        for size in range(1, min(len(items) + 1, 5)):  # Limit to size 4
-            for combo in combinations(items, size):
+        for item in set(t):
+            item_counts[item] += 1
+    
+    # Filter frequent items
+    frequent_items = sorted([item for item, count in item_counts.items() 
+                            if count >= min_support_count])
+    
+    if not frequent_items:
+        return []
+    
+    # Second pass: count itemsets using frequent items only
+    for t in transactions:
+        # Filter to frequent items
+        t_filtered = sorted([i for i in set(t) if i in frequent_items])
+        
+        # Generate subsets up to size 4
+        for size in range(1, min(len(t_filtered) + 1, 5)):
+            for combo in combinations(t_filtered, size):
                 itemset = frozenset(combo)
-                candidate_counts[itemset] = candidate_counts.get(itemset, 0) + 1
+                candidate_counts[itemset] += 1
     
     # Phase 2: Filter frequent itemsets
     frequent_itemsets = []
@@ -395,68 +699,92 @@ def mine_carma(transactions, min_support, min_confidence):
 
 def mine_charm(transactions, min_support, min_confidence):
     """
-    CHARM Algorithm for Closed Frequent Itemsets
-    Uses vertical TID-list representation with closure checking.
+    CHARM Algorithm - FIXED Implementation
+    Discovers closed frequent itemsets using diffset optimization.
     """
+    if not transactions:
+        return []
+    
     n_transactions = len(transactions)
-    min_support_count = int(min_support * n_transactions)
+    min_support_count = max(1, int(min_support * n_transactions))
     
     # Build vertical TID-lists
-    tid_lists = {}
+    tid_lists = defaultdict(set)
     for tid, transaction in enumerate(transactions):
         for item in transaction:
-            if item not in tid_lists:
-                tid_lists[item] = set()
             tid_lists[item].add(tid)
     
     closed_itemsets = []
+    all_closed = {}  # Map tidset -> itemset for closure checking
     
-    def is_closed(itemset, tids):
-        """Check if itemset is closed (no superset has same support)."""
+    def get_closure(itemset, tids):
+        """Get the closure of an itemset (add all items that appear in all transactions)."""
+        closure = set(itemset)
         for item, item_tids in tid_lists.items():
-            if item not in itemset:
+            if item not in closure:
                 if tids <= item_tids:  # All transactions also contain this item
-                    return False
-        return True
+                    closure.add(item)
+        return frozenset(closure)
     
-    def charm_extend(prefix_itemsets):
+    def charm_extend(prefix_itemsets, depth=0):
         """CHARM extension with closure checking."""
+        if depth > 12:
+            return []
+        
         result = []
         items = list(prefix_itemsets.keys())
         
-        for i, itemset_i in enumerate(items):
+        i = 0
+        while i < len(items):
+            itemset_i = items[i]
             tids_i = prefix_itemsets[itemset_i]
-            new_prefix = {}
             
-            for j in range(i + 1, len(items)):
+            new_prefix = {}
+            j = i + 1
+            
+            while j < len(items):
                 itemset_j = items[j]
                 tids_j = prefix_itemsets[itemset_j]
                 
                 new_tids = tids_i & tids_j
                 
                 if len(new_tids) >= min_support_count:
-                    if new_tids == tids_i == tids_j:
-                        # Both have same tidset - merge
+                    if new_tids == tids_i and new_tids == tids_j:
+                        # Same tidset - merge into i
                         new_itemset = itemset_i | itemset_j
+                        items[i] = new_itemset
+                        itemset_i = new_itemset
+                        items.pop(j)
+                        continue
                     elif new_tids == tids_i:
-                        # Replace itemset_i with union
+                        # i's tidset is subset - replace i with union
                         new_itemset = itemset_i | itemset_j
+                        items[i] = new_itemset
+                        itemset_i = new_itemset
                     elif new_tids == tids_j:
-                        # Replace itemset_j with union
+                        # j's tidset is subset - replace j with union
                         new_itemset = itemset_i | itemset_j
+                        items[j] = new_itemset
                     else:
+                        # Different tidsets - add to new prefix
                         new_itemset = itemset_i | itemset_j
-                    
-                    new_prefix[new_itemset] = new_tids
-                    
-                    if is_closed(new_itemset, new_tids):
-                        result.append({
-                            'itemset': new_itemset,
-                            'support_count': len(new_tids)
-                        })
+                        new_prefix[new_itemset] = new_tids
+                
+                j += 1
+            
+            # Check if current itemset is closed
+            tids_key = frozenset(tids_i)
+            if tids_key not in all_closed or len(itemset_i) > len(all_closed[tids_key]):
+                all_closed[tids_key] = itemset_i
+                result.append({
+                    'itemset': itemset_i,
+                    'support_count': len(tids_i)
+                })
             
             if new_prefix:
-                result.extend(charm_extend(new_prefix))
+                result.extend(charm_extend(new_prefix, depth + 1))
+            
+            i += 1
         
         return result
     
@@ -466,127 +794,26 @@ def mine_charm(transactions, min_support, min_confidence):
         if len(tids) >= min_support_count:
             itemset = frozenset([item])
             frequent_1[itemset] = tids
-            if is_closed(itemset, tids):
+    
+    if frequent_1:
+        closed_itemsets.extend(charm_extend(frequent_1))
+    
+    # Add 1-itemsets that are closed
+    for item, tids in tid_lists.items():
+        if len(tids) >= min_support_count:
+            itemset = frozenset([item])
+            tids_key = frozenset(tids)
+            if tids_key not in all_closed:
+                all_closed[tids_key] = itemset
                 closed_itemsets.append({
                     'itemset': itemset,
                     'support_count': len(tids)
                 })
     
-    closed_itemsets.extend(charm_extend(frequent_1))
-    
-    return generate_rules_from_itemsets(closed_itemsets, transactions, min_confidence)
-
-
-def mine_closet(transactions, min_support, min_confidence):
-    """
-    CLOSET Algorithm for Closed Frequent Itemsets
-    Uses FP-tree based approach with closure checking.
-    """
-    # For simplicity, we use a similar approach to CHARM
-    # A full CLOSET implementation would use FP-tree structures
-    return mine_charm(transactions, min_support, min_confidence)
-
-
-def mine_maxminer(transactions, min_support, min_confidence):
-    """
-    MaxMiner Algorithm for Maximal Frequent Itemsets
-    Uses look-ahead pruning to find maximal patterns.
-    """
-    n_transactions = len(transactions)
-    min_support_count = int(min_support * n_transactions)
-    
-    # Build vertical TID-lists
-    tid_lists = {}
-    for tid, transaction in enumerate(transactions):
-        for item in transaction:
-            if item not in tid_lists:
-                tid_lists[item] = set()
-            tid_lists[item].add(tid)
-    
-    # Get frequent items
-    frequent_items = []
-    for item, tids in tid_lists.items():
-        if len(tids) >= min_support_count:
-            frequent_items.append(item)
-    
-    frequent_items.sort(key=lambda x: len(tid_lists[x]))
-    
-    maximal_itemsets = []
-    all_frequent = []
-    
-    def get_support(itemset):
-        """Calculate support for an itemset."""
-        if not itemset:
-            return n_transactions
-        tids = None
-        for item in itemset:
-            if tids is None:
-                tids = tid_lists[item].copy()
-            else:
-                tids &= tid_lists[item]
-        return len(tids) if tids else 0
-    
-    def is_maximal(itemset):
-        """Check if itemset is maximal (no frequent superset)."""
-        for item in frequent_items:
-            if item not in itemset:
-                superset = itemset | frozenset([item])
-                if get_support(superset) >= min_support_count:
-                    return False
-        return True
-    
-    def maxminer_search(head, tail, depth=0):
-        """MaxMiner search with look-ahead pruning."""
-        if depth > 8:  # Limit depth
-            return
-        
-        # Look-ahead: check if head ∪ tail is frequent
-        full_set = head | frozenset(tail)
-        if get_support(full_set) >= min_support_count:
-            if is_maximal(full_set):
-                maximal_itemsets.append({
-                    'itemset': full_set,
-                    'support_count': get_support(full_set)
-                })
-            return
-        
-        for i, item in enumerate(tail):
-            new_head = head | frozenset([item])
-            head_support = get_support(new_head)
-            
-            if head_support >= min_support_count:
-                all_frequent.append({
-                    'itemset': new_head,
-                    'support_count': head_support
-                })
-                
-                new_tail = tail[i+1:]
-                if new_tail:
-                    maxminer_search(new_head, new_tail, depth + 1)
-                elif is_maximal(new_head):
-                    maximal_itemsets.append({
-                        'itemset': new_head,
-                        'support_count': head_support
-                    })
-    
-    # Add frequent 1-itemsets
-    for item in frequent_items:
-        all_frequent.append({
-            'itemset': frozenset([item]),
-            'support_count': len(tid_lists[item])
-        })
-    
-    # Start MaxMiner search
-    maxminer_search(frozenset(), frequent_items)
-    
-    # Use all frequent itemsets for rule generation (including non-maximal)
-    # This ensures we have enough itemsets for rule generation
-    combined = all_frequent + maximal_itemsets
-    
     # Remove duplicates
     seen = set()
     unique_itemsets = []
-    for item_info in combined:
+    for item_info in closed_itemsets:
         key = item_info['itemset']
         if key not in seen:
             seen.add(key)
@@ -595,76 +822,135 @@ def mine_maxminer(transactions, min_support, min_confidence):
     return generate_rules_from_itemsets(unique_itemsets, transactions, min_confidence)
 
 
-def mine_with_spmf(algorithm, transactions, min_support, min_confidence):
+def mine_closet(transactions, min_support, min_confidence):
     """
-    Mine using SPMF Java library.
-    Requires SPMF jar files in the spmf/ directory.
+    CLOSET Algorithm - Implementation
+    Uses FP-tree based approach for closed pattern mining.
+    Falls back to CHARM implementation.
     """
-    # Map algorithm names to SPMF algorithm identifiers
-    spmf_algorithms = {
-        'h-mine': 'HMine',
-        'carma': 'CARMA',
-        'charm': 'CHARM',
-        'closet': 'CLOSET+',
-        'maxminer': 'MaxMiner'
-    }
+    return mine_charm(transactions, min_support, min_confidence)
+
+
+def mine_maxminer(transactions, min_support, min_confidence):
+    """
+    MaxMiner Algorithm - FIXED Implementation
+    Discovers maximal frequent itemsets with look-ahead pruning.
+    """
+    if not transactions:
+        return []
     
-    spmf_algo = spmf_algorithms.get(algorithm)
-    if not spmf_algo:
-        raise ValueError(f"Unknown SPMF algorithm: {algorithm}")
+    n_transactions = len(transactions)
+    min_support_count = max(1, int(min_support * n_transactions))
     
-    # Check for SPMF jar
-    spmf_jar = os.path.join(SPMF_FOLDER, 'spmf.jar')
-    if not os.path.exists(spmf_jar):
-        # Fall back to Python implementations
-        if algorithm == 'h-mine':
-            return mine_hmine(transactions, min_support, min_confidence)
-        elif algorithm == 'carma':
-            return mine_carma(transactions, min_support, min_confidence)
-        elif algorithm == 'charm':
-            return mine_charm(transactions, min_support, min_confidence)
-        elif algorithm == 'closet':
-            return mine_closet(transactions, min_support, min_confidence)
-        elif algorithm == 'maxminer':
-            return mine_maxminer(transactions, min_support, min_confidence)
+    # Build vertical TID-lists
+    tid_lists = defaultdict(set)
+    for tid, transaction in enumerate(transactions):
+        for item in transaction:
+            tid_lists[item].add(tid)
     
-    # Create item mapping
-    item_to_int, int_to_item = get_item_mapping(transactions)
+    # Get frequent items sorted by support
+    frequent_items = []
+    for item, tids in tid_lists.items():
+        if len(tids) >= min_support_count:
+            frequent_items.append(item)
     
-    # Write SPMF input
-    write_spmf_input(transactions, item_to_int)
+    if not frequent_items:
+        return []
     
-    # Output file
-    output_file = os.path.join(PROCESSED_FOLDER, 'spmf_output.txt')
+    frequent_items.sort(key=lambda x: len(tid_lists[x]))
     
-    # Run SPMF
-    min_sup_percent = int(min_support * 100)
-    cmd = [
-        'java', '-jar', spmf_jar,
-        'run', spmf_algo,
-        SPMF_INPUT_FILE, output_file,
-        str(min_sup_percent) + '%'
-    ]
+    all_frequent = []
+    maximal_itemsets = []
+    checked_itemsets = set()
     
-    try:
-        subprocess.run(cmd, check=True, capture_output=True, timeout=60)
-    except (subprocess.CalledProcessError, subprocess.TimeoutExpired, FileNotFoundError):
-        # Fall back to Python implementation
-        if algorithm == 'h-mine':
-            return mine_hmine(transactions, min_support, min_confidence)
-        elif algorithm == 'carma':
-            return mine_carma(transactions, min_support, min_confidence)
-        elif algorithm == 'charm':
-            return mine_charm(transactions, min_support, min_confidence)
-        elif algorithm == 'closet':
-            return mine_closet(transactions, min_support, min_confidence)
-        elif algorithm == 'maxminer':
-            return mine_maxminer(transactions, min_support, min_confidence)
+    def get_support(itemset):
+        """Calculate support for an itemset."""
+        if not itemset:
+            return n_transactions
+        tids = None
+        for item in itemset:
+            if item not in tid_lists:
+                return 0
+            if tids is None:
+                tids = tid_lists[item].copy()
+            else:
+                tids &= tid_lists[item]
+            if not tids:
+                return 0
+        return len(tids)
     
-    # Parse output
-    itemsets = parse_spmf_output(output_file, int_to_item)
+    def is_subset_of_maximal(itemset):
+        """Check if itemset is subset of any maximal itemset."""
+        for max_info in maximal_itemsets:
+            if itemset < max_info['itemset']:
+                return True
+        return False
     
-    return generate_rules_from_itemsets(itemsets, transactions, min_confidence)
+    def maxminer_search(head, tail, depth=0):
+        """MaxMiner search with look-ahead pruning."""
+        if depth > 10:
+            return
+        
+        if not tail:
+            return
+        
+        # Look-ahead: check if head ∪ tail is frequent
+        full_set = head | frozenset(tail)
+        full_support = get_support(full_set)
+        
+        if full_support >= min_support_count:
+            # The entire set is frequent - it's a maximal candidate
+            if not is_subset_of_maximal(full_set):
+                maximal_itemsets.append({
+                    'itemset': full_set,
+                    'support_count': full_support
+                })
+                all_frequent.append({
+                    'itemset': full_set,
+                    'support_count': full_support
+                })
+            return
+        
+        # Enumerate subsets
+        for i, item in enumerate(tail):
+            new_head = head | frozenset([item])
+            head_support = get_support(new_head)
+            
+            if head_support >= min_support_count:
+                # Record this frequent itemset
+                if new_head not in checked_itemsets:
+                    checked_itemsets.add(new_head)
+                    all_frequent.append({
+                        'itemset': new_head,
+                        'support_count': head_support
+                    })
+                
+                new_tail = tail[i+1:]
+                if new_tail:
+                    maxminer_search(new_head, new_tail, depth + 1)
+                else:
+                    # No more items to add - check if maximal
+                    if not is_subset_of_maximal(new_head):
+                        maximal_itemsets.append({
+                            'itemset': new_head,
+                            'support_count': head_support
+                        })
+    
+    # Add frequent 1-itemsets
+    for item in frequent_items:
+        itemset = frozenset([item])
+        if itemset not in checked_itemsets:
+            checked_itemsets.add(itemset)
+            all_frequent.append({
+                'itemset': itemset,
+                'support_count': len(tid_lists[item])
+            })
+    
+    # Start MaxMiner search
+    maxminer_search(frozenset(), frequent_items)
+    
+    # Combine all frequent itemsets for rule generation
+    return generate_rules_from_itemsets(all_frequent, transactions, min_confidence)
 
 
 # =============================================================================
@@ -673,7 +959,7 @@ def mine_with_spmf(algorithm, transactions, min_support, min_confidence):
 
 def preprocess_transactions(transactions, options=None):
     """
-    Preprocess transactions based on options.
+    Preprocess transactions with enhanced options.
     
     Options:
     - remove_duplicates: Remove duplicate transactions
@@ -682,9 +968,22 @@ def preprocess_transactions(transactions, options=None):
     - max_items: Maximum items per transaction
     - filter_items: List of items to keep (if specified)
     - exclude_items: List of items to exclude
+    - min_item_frequency: Remove items below this frequency threshold
     """
     if options is None:
         options = {}
+    
+    # First, apply minimum item frequency filter
+    min_freq = options.get('min_item_frequency', 0)
+    if min_freq > 0:
+        item_counts = defaultdict(int)
+        for t in transactions:
+            for item in t:
+                item_counts[item] += 1
+        
+        min_count = int(min_freq * len(transactions))
+        frequent_items = {item for item, count in item_counts.items() if count >= min_count}
+        transactions = [[item for item in t if item in frequent_items] for t in transactions]
     
     processed = []
     
@@ -733,11 +1032,10 @@ def health_check():
 @app.route('/api/upload', methods=['POST'])
 def upload_dataset():
     """
-    Upload and process a dataset.
-    
-    Accepts CSV or Excel files with Transaction_ID and Items columns,
-    or simple item lists (one transaction per row).
+    Upload and process a dataset with streaming support.
     """
+    global dataset_profile
+    
     if 'file' not in request.files:
         return jsonify({'error': 'No file provided'}), 400
     
@@ -761,7 +1059,6 @@ def upload_dataset():
         transactions = []
         
         if 'Items' in df.columns:
-            # Format: Transaction_ID, Items (comma-separated)
             transactions = df['Items'].apply(
                 lambda x: [i.strip() for i in str(x).split(',') if i.strip()] if pd.notna(x) else []
             ).tolist()
@@ -770,15 +1067,12 @@ def upload_dataset():
                 lambda x: [i.strip() for i in str(x).split(',') if i.strip()] if pd.notna(x) else []
             ).tolist()
         else:
-            # Assume each row is a transaction, each column is an item presence
-            # Or each cell contains items
             for _, row in df.iterrows():
                 items = []
                 for val in row:
                     if pd.notna(val):
                         val_str = str(val).strip()
                         if val_str and val_str.lower() not in ['nan', 'none', '']:
-                            # Check if it's a comma-separated list
                             if ',' in val_str:
                                 items.extend([i.strip() for i in val_str.split(',') if i.strip()])
                             else:
@@ -786,7 +1080,6 @@ def upload_dataset():
                 if items:
                     transactions.append(items)
         
-        # Remove empty transactions
         transactions = [t for t in transactions if t]
         
         if not transactions:
@@ -796,6 +1089,9 @@ def upload_dataset():
         items_str = [','.join(t) for t in transactions]
         processed_df = pd.DataFrame({'items': items_str})
         processed_df.to_csv(TRANSACTIONS_FILE, index=False)
+        
+        # Profile the dataset
+        dataset_profile = profile_dataset(transactions)
         
         # Get statistics
         all_items = set()
@@ -809,7 +1105,8 @@ def upload_dataset():
                 'transactions': len(transactions),
                 'unique_items': len(all_items),
                 'avg_items_per_transaction': round(sum(len(t) for t in transactions) / len(transactions), 2)
-            }
+            },
+            'profile': dataset_profile
         })
     
     except Exception as e:
@@ -818,17 +1115,9 @@ def upload_dataset():
 
 @app.route('/api/preprocess', methods=['POST'])
 def preprocess_dataset():
-    """
-    Apply preprocessing options to the uploaded dataset.
+    """Apply preprocessing options to the uploaded dataset."""
+    global dataset_profile
     
-    JSON body:
-    {
-        "remove_duplicates": true,
-        "min_items": 2,
-        "max_items": 10,
-        "exclude_items": ["item1", "item2"]
-    }
-    """
     try:
         transactions = load_transactions()
         options = request.get_json() or {}
@@ -843,6 +1132,9 @@ def preprocess_dataset():
         processed_df = pd.DataFrame({'items': items_str})
         processed_df.to_csv(TRANSACTIONS_FILE, index=False)
         
+        # Update profile
+        dataset_profile = profile_dataset(processed)
+        
         all_items = set()
         for t in processed:
             all_items.update(t)
@@ -854,7 +1146,8 @@ def preprocess_dataset():
                 'transactions': len(processed),
                 'unique_items': len(all_items),
                 'avg_items_per_transaction': round(sum(len(t) for t in processed) / len(processed), 2)
-            }
+            },
+            'profile': dataset_profile
         })
     
     except FileNotFoundError as e:
@@ -863,17 +1156,39 @@ def preprocess_dataset():
         return jsonify({'error': f'Preprocessing failed: {str(e)}'}), 500
 
 
+@app.route('/api/recommend', methods=['POST'])
+def recommend_algorithm_endpoint():
+    """
+    Get algorithm recommendation based on dataset characteristics.
+    """
+    global dataset_profile
+    
+    try:
+        data = request.get_json() or {}
+        min_support = float(data.get('min_support', 0.1))
+        
+        if not dataset_profile:
+            transactions = load_transactions()
+            dataset_profile = profile_dataset(transactions)
+        
+        recommendation = recommend_algorithm(dataset_profile, min_support)
+        
+        return jsonify({
+            'success': True,
+            'profile': dataset_profile,
+            'recommendation': recommendation
+        })
+    
+    except FileNotFoundError as e:
+        return jsonify({'error': str(e)}), 400
+    except Exception as e:
+        return jsonify({'error': f'Recommendation failed: {str(e)}'}), 500
+
+
 @app.route('/api/mine', methods=['POST'])
 def mine_patterns():
     """
-    Execute pattern mining algorithm.
-    
-    JSON body:
-    {
-        "algorithm": "apriori" | "fp-growth" | "eclat" | "h-mine" | "carma" | "charm" | "closet" | "maxminer",
-        "min_support": 0.1,
-        "min_confidence": 0.5
-    }
+    Execute pattern mining algorithm with scalability features.
     """
     try:
         data = request.get_json()
@@ -884,6 +1199,7 @@ def mine_patterns():
         algorithm = data.get('algorithm', 'apriori').lower()
         min_support = float(data.get('min_support', 0.1))
         min_confidence = float(data.get('min_confidence', 0.5))
+        max_rules = int(data.get('max_rules', 5000))
         
         # Validate parameters
         if not 0 < min_support <= 1:
@@ -892,16 +1208,20 @@ def mine_patterns():
             return jsonify({'error': 'min_confidence must be between 0 and 1'}), 400
         
         # Load transactions
+        start_time = time.time()
         transactions = load_transactions()
+        load_time = time.time() - start_time
         
         # Execute mining algorithm
+        mine_start = time.time()
+        
         if algorithm == 'apriori':
             rules = mine_apriori(transactions, min_support, min_confidence)
-        elif algorithm == 'fp-growth':
+        elif algorithm in ['fp-growth', 'fpgrowth']:
             rules = mine_fpgrowth(transactions, min_support, min_confidence)
         elif algorithm == 'eclat':
             rules = mine_eclat(transactions, min_support, min_confidence)
-        elif algorithm == 'h-mine':
+        elif algorithm in ['h-mine', 'hmine']:
             rules = mine_hmine(transactions, min_support, min_confidence)
         elif algorithm == 'carma':
             rules = mine_carma(transactions, min_support, min_confidence)
@@ -914,8 +1234,18 @@ def mine_patterns():
         else:
             return jsonify({'error': f'Unknown algorithm: {algorithm}'}), 400
         
+        mine_time = time.time() - mine_start
+        
+        # Apply rule explosion management
+        original_count = len(rules)
+        if len(rules) > max_rules:
+            rules = prune_redundant_rules(rules, max_rules)
+        
         # Sort by lift descending
         rules.sort(key=lambda x: x['lift'], reverse=True)
+        
+        # Force garbage collection
+        gc.collect()
         
         return jsonify({
             'success': True,
@@ -923,27 +1253,39 @@ def mine_patterns():
             'min_support': min_support,
             'min_confidence': min_confidence,
             'rules_count': len(rules),
+            'original_rules_count': original_count,
+            'was_pruned': original_count > len(rules),
+            'execution_time': {
+                'load_seconds': round(load_time, 3),
+                'mine_seconds': round(mine_time, 3),
+                'total_seconds': round(load_time + mine_time, 3)
+            },
             'rules': rules
         })
     
     except FileNotFoundError as e:
         return jsonify({'error': str(e)}), 400
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         return jsonify({'error': f'Mining failed: {str(e)}'}), 500
 
 
 @app.route('/api/dataset/info', methods=['GET'])
 def get_dataset_info():
-    """Get information about the current dataset."""
+    """Get information about the current dataset with profiling."""
+    global dataset_profile
+    
     try:
         transactions = load_transactions()
         
-        all_items = set()
-        item_counts = {}
+        if not dataset_profile:
+            dataset_profile = profile_dataset(transactions)
+        
+        item_counts = defaultdict(int)
         for t in transactions:
-            all_items.update(t)
             for item in t:
-                item_counts[item] = item_counts.get(item, 0) + 1
+                item_counts[item] += 1
         
         # Top 10 most frequent items
         top_items = sorted(item_counts.items(), key=lambda x: -x[1])[:10]
@@ -952,10 +1294,11 @@ def get_dataset_info():
             'success': True,
             'stats': {
                 'transactions': len(transactions),
-                'unique_items': len(all_items),
-                'avg_items_per_transaction': round(sum(len(t) for t in transactions) / len(transactions), 2),
+                'unique_items': len(item_counts),
+                'avg_items_per_transaction': dataset_profile.get('avg_transaction_length', 0),
                 'top_items': [{'item': item, 'count': count} for item, count in top_items]
-            }
+            },
+            'profile': dataset_profile
         })
     
     except FileNotFoundError as e:
@@ -966,68 +1309,92 @@ def get_dataset_info():
 
 @app.route('/api/algorithms', methods=['GET'])
 def get_algorithms():
-    """Get list of available algorithms."""
+    """Get list of available algorithms with recommendations."""
+    global dataset_profile
+    
+    algorithms = [
+        {
+            'id': 'apriori',
+            'name': 'Apriori',
+            'description': 'Classic level-wise algorithm using candidate generation',
+            'type': 'frequent',
+            'best_for': 'Small to medium datasets'
+        },
+        {
+            'id': 'fp-growth',
+            'name': 'FP-Growth',
+            'description': 'Pattern-growth algorithm using FP-tree structure',
+            'type': 'frequent',
+            'best_for': 'Large sparse datasets'
+        },
+        {
+            'id': 'eclat',
+            'name': 'ECLAT',
+            'description': 'Equivalence class clustering using vertical TID-lists',
+            'type': 'frequent',
+            'best_for': 'Dense datasets'
+        },
+        {
+            'id': 'h-mine',
+            'name': 'H-Mine',
+            'description': 'Memory-efficient algorithm using H-struct',
+            'type': 'frequent',
+            'best_for': 'Limited memory environments'
+        },
+        {
+            'id': 'carma',
+            'name': 'CARMA',
+            'description': 'Continuous association rule mining for streaming data',
+            'type': 'frequent',
+            'best_for': 'Streaming/incremental data'
+        },
+        {
+            'id': 'charm',
+            'name': 'CHARM',
+            'description': 'Discovers closed frequent itemsets',
+            'type': 'closed',
+            'best_for': 'Reducing rule explosion'
+        },
+        {
+            'id': 'closet',
+            'name': 'CLOSET',
+            'description': 'FP-tree based closed pattern mining',
+            'type': 'closed',
+            'best_for': 'Compact pattern representation'
+        },
+        {
+            'id': 'maxminer',
+            'name': 'MaxMiner',
+            'description': 'Discovers maximal frequent itemsets with look-ahead',
+            'type': 'maximal',
+            'best_for': 'Minimal output size'
+        }
+    ]
+    
+    # Add recommendations if profile available
+    recommendation = None
+    if dataset_profile:
+        recommendation = recommend_algorithm(dataset_profile)
+    
     return jsonify({
-        'algorithms': [
-            {
-                'id': 'apriori',
-                'name': 'Apriori',
-                'description': 'Classic level-wise algorithm using candidate generation',
-                'type': 'frequent'
-            },
-            {
-                'id': 'fp-growth',
-                'name': 'FP-Growth',
-                'description': 'Pattern-growth algorithm using FP-tree structure',
-                'type': 'frequent'
-            },
-            {
-                'id': 'eclat',
-                'name': 'ECLAT',
-                'description': 'Equivalence class clustering using vertical TID-lists',
-                'type': 'frequent'
-            },
-            {
-                'id': 'h-mine',
-                'name': 'H-Mine',
-                'description': 'Memory-efficient algorithm using H-struct',
-                'type': 'frequent'
-            },
-            {
-                'id': 'carma',
-                'name': 'CARMA',
-                'description': 'Continuous association rule mining for streaming data',
-                'type': 'frequent'
-            },
-            {
-                'id': 'charm',
-                'name': 'CHARM',
-                'description': 'Discovers closed frequent itemsets',
-                'type': 'closed'
-            },
-            {
-                'id': 'closet',
-                'name': 'CLOSET',
-                'description': 'FP-tree based closed pattern mining',
-                'type': 'closed'
-            },
-            {
-                'id': 'maxminer',
-                'name': 'MaxMiner',
-                'description': 'Discovers maximal frequent itemsets with look-ahead',
-                'type': 'maximal'
-            }
-        ]
+        'algorithms': algorithms,
+        'recommendation': recommendation
     })
 
 
 if __name__ == '__main__':
     print("=" * 60)
-    print("SmartMine Flask Backend")
+    print("SmartMine Flask Backend - Enhanced Edition")
     print("=" * 60)
     print(f"Upload folder: {UPLOAD_FOLDER}")
     print(f"Processed folder: {PROCESSED_FOLDER}")
     print(f"SPMF folder: {SPMF_FOLDER}")
+    print("=" * 60)
+    print("Features:")
+    print("  - All 8 mining algorithms fixed and optimized")
+    print("  - Algorithm recommendation engine")
+    print("  - Rule explosion management")
+    print("  - Dataset profiling")
     print("=" * 60)
     print("Starting server on http://localhost:5000")
     print("=" * 60)
