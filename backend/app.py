@@ -5,6 +5,7 @@ Complete data mining backend with:
 - Scalable streaming ingestion
 - Algorithm recommendation engine
 - Rule explosion management
+- Classification mining (Naive Bayes, Decision Tree)
 - Support for: Apriori, FP-Growth, ECLAT, H-Mine, CARMA, CHARM, CLOSET, MaxMiner
 
 Run with: python app.py
@@ -26,6 +27,13 @@ import numpy as np
 from mlxtend.preprocessing import TransactionEncoder
 from mlxtend.frequent_patterns import apriori, fpgrowth, association_rules
 from itertools import combinations
+
+# Classification imports
+from sklearn.model_selection import train_test_split
+from sklearn.naive_bayes import GaussianNB
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.preprocessing import LabelEncoder
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix, classification_report
 
 app = Flask(__name__)
 CORS(app, origins=["*"])
@@ -1382,6 +1390,139 @@ def get_algorithms():
     })
 
 
+@app.route('/api/classify', methods=['POST'])
+def classify_data():
+    """
+    Classification mining endpoint.
+    Supports Naive Bayes and Decision Tree classifiers.
+    """
+    try:
+        data = request.get_json() or {}
+        algorithm = data.get('algorithm', 'naive-bayes').lower()
+        
+        # Load the dataset
+        if not os.path.exists(TRANSACTIONS_FILE):
+            return jsonify({'error': 'No dataset uploaded. Please upload a dataset first.'}), 400
+        
+        # Read the original uploaded file for classification
+        # For classification, we need feature columns + class label
+        df = pd.read_csv(TRANSACTIONS_FILE)
+        
+        if 'items' in df.columns:
+            # Convert transaction format to feature format for classification
+            # Parse items and create binary feature matrix
+            all_items = set()
+            transactions = []
+            for items_str in df['items']:
+                items = [i.strip() for i in str(items_str).split(',') if i.strip()]
+                transactions.append(items)
+                all_items.update(items)
+            
+            all_items = sorted(all_items)
+            
+            # Create binary feature matrix
+            feature_matrix = []
+            for t in transactions:
+                row = [1 if item in t else 0 for item in all_items]
+                feature_matrix.append(row)
+            
+            X = pd.DataFrame(feature_matrix, columns=all_items)
+            
+            # Use the last item as "class" for demo purposes
+            # In real scenario, user should upload proper classification dataset
+            if len(all_items) > 1:
+                class_column = all_items[-1]
+                y = X[class_column]
+                X = X.drop(columns=[class_column])
+            else:
+                return jsonify({'error': 'Dataset needs at least 2 columns for classification'}), 400
+        else:
+            # Standard tabular format: last column is class label
+            if len(df.columns) < 2:
+                return jsonify({'error': 'Dataset needs at least 2 columns for classification'}), 400
+            
+            X = df.iloc[:, :-1]
+            y = df.iloc[:, -1]
+        
+        # Encode categorical features
+        label_encoders = {}
+        X_encoded = X.copy()
+        
+        for col in X_encoded.columns:
+            if X_encoded[col].dtype == 'object':
+                le = LabelEncoder()
+                X_encoded[col] = le.fit_transform(X_encoded[col].astype(str))
+                label_encoders[col] = le
+        
+        # Encode target variable
+        target_le = LabelEncoder()
+        y_encoded = target_le.fit_transform(y.astype(str))
+        class_labels = list(target_le.classes_)
+        
+        # Split data
+        X_train, X_test, y_train, y_test = train_test_split(
+            X_encoded, y_encoded, test_size=0.2, random_state=42, stratify=y_encoded
+        )
+        
+        # Train classifier
+        start_time = time.time()
+        
+        if algorithm in ['naive-bayes', 'naivebayes']:
+            classifier = GaussianNB()
+            classifier.fit(X_train, y_train)
+            feature_importances = None
+        elif algorithm in ['decision-tree', 'decisiontree']:
+            classifier = DecisionTreeClassifier(random_state=42, max_depth=10)
+            classifier.fit(X_train, y_train)
+            # Get feature importances
+            importances = classifier.feature_importances_
+            feature_importances = [
+                {'feature': str(col), 'importance': float(imp)}
+                for col, imp in sorted(zip(X.columns, importances), key=lambda x: -x[1])
+                if imp > 0
+            ]
+        else:
+            return jsonify({'error': f'Unknown algorithm: {algorithm}. Use naive-bayes or decision-tree'}), 400
+        
+        # Make predictions
+        y_pred = classifier.predict(X_test)
+        
+        execution_time = time.time() - start_time
+        
+        # Calculate metrics
+        accuracy = accuracy_score(y_test, y_pred)
+        precision = precision_score(y_test, y_pred, average='weighted', zero_division=0)
+        recall = recall_score(y_test, y_pred, average='weighted', zero_division=0)
+        f1 = f1_score(y_test, y_pred, average='weighted', zero_division=0)
+        conf_matrix = confusion_matrix(y_test, y_pred).tolist()
+        class_report = classification_report(y_test, y_pred, target_names=class_labels, zero_division=0)
+        
+        result = {
+            'success': True,
+            'algorithm': algorithm,
+            'accuracy': round(accuracy, 4),
+            'precision': round(precision, 4),
+            'recall': round(recall, 4),
+            'f1_score': round(f1, 4),
+            'confusion_matrix': conf_matrix,
+            'class_labels': class_labels,
+            'classification_report': class_report,
+            'execution_time': round(execution_time, 4),
+            'train_size': len(X_train),
+            'test_size': len(X_test)
+        }
+        
+        if feature_importances:
+            result['feature_importances'] = feature_importances[:20]  # Top 20
+        
+        return jsonify(result)
+    
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': f'Classification failed: {str(e)}'}), 500
+
+
 if __name__ == '__main__':
     print("=" * 60)
     print("SmartMine Flask Backend - Enhanced Edition")
@@ -1395,6 +1536,7 @@ if __name__ == '__main__':
     print("  - Algorithm recommendation engine")
     print("  - Rule explosion management")
     print("  - Dataset profiling")
+    print("  - Classification mining (Naive Bayes, Decision Tree)")
     print("=" * 60)
     print("Starting server on http://localhost:5000")
     print("=" * 60)

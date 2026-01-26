@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import type { AssociationRule, FrequentItemset, MiningParams } from "@/pages/Dashboard";
 
 const API_BASE = "http://localhost:5000";
@@ -28,7 +28,7 @@ interface UploadResult {
   profile?: DatasetProfile;
 }
 
-interface DatasetProfile {
+export interface DatasetProfile {
   n_transactions: number;
   n_unique_items: number;
   avg_transaction_length: number;
@@ -39,7 +39,7 @@ interface DatasetProfile {
   is_sparse: boolean;
 }
 
-interface AlgorithmRecommendation {
+export interface AlgorithmRecommendation {
   recommendations: Array<{
     algorithm: string;
     score: number;
@@ -56,6 +56,32 @@ interface PreprocessOptions {
   maxItems?: number;
   excludeItems?: string[];
   minItemFrequency?: number;
+  removeNulls?: boolean;
+  lowercase?: boolean;
+}
+
+interface DatasetInfo {
+  stats: {
+    transactions: number;
+    unique_items: number;
+    avg_items_per_transaction: number;
+    top_items?: Array<{ item: string; count: number }>;
+  };
+  profile: DatasetProfile;
+}
+
+interface ClassificationResult {
+  success: boolean;
+  algorithm: string;
+  accuracy: number;
+  precision: number;
+  recall: number;
+  f1_score: number;
+  confusion_matrix: number[][];
+  class_labels: string[];
+  classification_report: string;
+  feature_importances?: Array<{ feature: string; importance: number }>;
+  execution_time: number;
 }
 
 export function useMining() {
@@ -66,7 +92,7 @@ export function useMining() {
   const [datasetProfile, setDatasetProfile] = useState<DatasetProfile | null>(null);
   const [recommendation, setRecommendation] = useState<AlgorithmRecommendation | null>(null);
 
-  const uploadDataset = async (file: File): Promise<UploadResult | null> => {
+  const uploadDataset = useCallback(async (file: File): Promise<UploadResult | null> => {
     setError(null);
     
     try {
@@ -94,9 +120,9 @@ export function useMining() {
       setError(err instanceof Error ? err.message : "Failed to upload dataset");
       return null;
     }
-  };
+  }, []);
 
-  const preprocessDataset = async (options: PreprocessOptions): Promise<boolean> => {
+  const preprocessDataset = useCallback(async (options: PreprocessOptions): Promise<boolean> => {
     setError(null);
     
     try {
@@ -111,6 +137,8 @@ export function useMining() {
           max_items: options.maxItems,
           exclude_items: options.excludeItems,
           min_item_frequency: options.minItemFrequency,
+          remove_nulls: options.removeNulls,
+          lowercase: options.lowercase,
         }),
       });
 
@@ -130,9 +158,31 @@ export function useMining() {
       setError(err instanceof Error ? err.message : "Failed to preprocess dataset");
       return false;
     }
-  };
+  }, []);
 
-  const getRecommendation = async (minSupport: number = 0.1): Promise<AlgorithmRecommendation | null> => {
+  const getDatasetInfo = useCallback(async (): Promise<DatasetInfo | null> => {
+    setError(null);
+    
+    try {
+      const response = await fetch(`${API_BASE}/api/dataset/info`);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to get dataset info");
+      }
+
+      setDatasetStats(data.stats);
+      if (data.profile) {
+        setDatasetProfile(data.profile);
+      }
+      return data;
+    } catch (err) {
+      console.error("Dataset info error:", err);
+      return null;
+    }
+  }, []);
+
+  const getRecommendation = useCallback(async (minSupport: number = 0.1): Promise<AlgorithmRecommendation | null> => {
     setError(null);
     
     try {
@@ -159,9 +209,9 @@ export function useMining() {
       console.error("Recommendation error:", err);
       return null;
     }
-  };
+  }, []);
 
-  const runMining = async (
+  const runMining = useCallback(async (
     _transactions: string[][] | null,
     algorithm: string,
     params: MiningParams
@@ -249,22 +299,66 @@ export function useMining() {
       setIsRunning(false);
       setTimeout(() => setProgress(0), 500);
     }
-  };
+  }, [datasetStats?.transactions, datasetStats?.unique_items]);
 
-  const checkHealth = async (): Promise<boolean> => {
+  const runClassification = useCallback(async (
+    algorithm: string
+  ): Promise<ClassificationResult | null> => {
+    setIsRunning(true);
+    setError(null);
+    setProgress(10);
+
+    try {
+      const progressInterval = setInterval(() => {
+        setProgress((p) => Math.min(p + 15, 85));
+      }, 200);
+
+      const response = await fetch(`${API_BASE}/api/classify`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          algorithm: algorithm.toLowerCase(),
+        }),
+      });
+
+      clearInterval(progressInterval);
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Classification failed");
+      }
+
+      setProgress(100);
+      return data;
+    } catch (err) {
+      console.error("Classification error:", err);
+      setError(err instanceof Error ? err.message : "An error occurred during classification");
+      return null;
+    } finally {
+      setIsRunning(false);
+      setTimeout(() => setProgress(0), 500);
+    }
+  }, []);
+
+  const checkHealth = useCallback(async (): Promise<boolean> => {
     try {
       const response = await fetch(`${API_BASE}/api/health`);
       return response.ok;
     } catch {
       return false;
     }
-  };
+  }, []);
 
   return {
     uploadDataset,
     preprocessDataset,
+    getDatasetInfo,
     getRecommendation,
     runMining,
+    runClassification,
     checkHealth,
     isRunning,
     error,
