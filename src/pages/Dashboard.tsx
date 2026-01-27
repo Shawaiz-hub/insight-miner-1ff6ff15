@@ -10,14 +10,16 @@ import { ExportResults } from "@/components/dashboard/ExportResults";
 import { PreprocessingConfig } from "@/components/dashboard/PreprocessingConfig";
 import { ClassificationConfig, type ClassificationResults as ClassificationResultsType } from "@/components/dashboard/ClassificationConfig";
 import { ClassificationResults } from "@/components/dashboard/ClassificationResults";
+import { ClusteringConfig, type ClusteringResults as ClusteringResultsType } from "@/components/dashboard/ClusteringConfig";
+import { ClusteringResults } from "@/components/dashboard/ClusteringResults";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Play, RotateCcw, Database, Settings, BarChart3, AlertCircle, Filter, CheckCircle2, XCircle, Brain, Link2 } from "lucide-react";
+import { Play, RotateCcw, Database, Settings, BarChart3, AlertCircle, Filter, CheckCircle2, XCircle, Brain, Link2, Boxes } from "lucide-react";
 import { useMining } from "@/hooks/useMining";
 import { Progress } from "@/components/ui/progress";
 
-export type MiningTask = "association" | "classification";
+export type MiningTask = "association" | "classification" | "clustering";
 export type MiningStep = "upload" | "preprocess" | "task" | "algorithm" | "parameters" | "results";
 
 export interface DatasetInfo {
@@ -63,6 +65,7 @@ const Dashboard = () => {
   const [results, setResults] = useState<AssociationRule[]>([]);
   const [itemsets, setItemsets] = useState<FrequentItemset[]>([]);
   const [classificationResults, setClassificationResults] = useState<ClassificationResultsType | null>(null);
+  const [clusteringResults, setClusteringResults] = useState<ClusteringResultsType | null>(null);
   const [transactionCount, setTransactionCount] = useState(0);
   const [backendConnected, setBackendConnected] = useState<boolean | null>(null);
   
@@ -116,6 +119,11 @@ const Dashboard = () => {
     setStep("results");
   };
 
+  const handleClusteringResults = (results: ClusteringResultsType) => {
+    setClusteringResults(results);
+    setStep("results");
+  };
+
   const handleReset = () => { 
     setStep("upload"); 
     setDataset(null); 
@@ -123,6 +131,7 @@ const Dashboard = () => {
     setItemsets([]); 
     setTransactionCount(0);
     setClassificationResults(null);
+    setClusteringResults(null);
     setMiningTask("association");
   };
 
@@ -207,7 +216,7 @@ const Dashboard = () => {
                   <p className="text-muted-foreground">Choose the type of data mining to perform</p>
                 </div>
                 
-                <div className="grid md:grid-cols-2 gap-6 max-w-2xl mx-auto">
+                <div className="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto">
                   <button
                     onClick={() => handleTaskSelect("association")}
                     className={`relative text-left p-6 rounded-xl border transition-all card-hover ${
@@ -224,9 +233,9 @@ const Dashboard = () => {
                     <div className="feature-icon w-12 h-12 mb-4">
                       <Link2 className="w-6 h-6 text-primary" />
                     </div>
-                    <h3 className="font-semibold text-lg mb-2">Association Rule Mining</h3>
+                    <h3 className="font-semibold text-lg mb-2">Association Rules</h3>
                     <p className="text-sm text-muted-foreground">
-                      Discover patterns and relationships between items in transactional data using algorithms like Apriori, FP-Growth, and ECLAT.
+                      Discover patterns and relationships using Apriori, FP-Growth, ECLAT, and more.
                     </p>
                     <div className="mt-4 flex flex-wrap gap-2">
                       <span className="px-2 py-1 rounded bg-secondary text-xs">Frequent Itemsets</span>
@@ -250,13 +259,39 @@ const Dashboard = () => {
                     <div className="feature-icon w-12 h-12 mb-4">
                       <Brain className="w-6 h-6 text-primary" />
                     </div>
-                    <h3 className="font-semibold text-lg mb-2">Classification Mining</h3>
+                    <h3 className="font-semibold text-lg mb-2">Classification</h3>
                     <p className="text-sm text-muted-foreground">
-                      Train classifiers to predict class labels using Naive Bayes or Decision Tree algorithms on labeled datasets.
+                      Train classifiers with Naive Bayes or Decision Tree algorithms.
                     </p>
                     <div className="mt-4 flex flex-wrap gap-2">
                       <span className="px-2 py-1 rounded bg-secondary text-xs">Naive Bayes</span>
                       <span className="px-2 py-1 rounded bg-secondary text-xs">Decision Tree</span>
+                    </div>
+                  </button>
+                  
+                  <button
+                    onClick={() => handleTaskSelect("clustering")}
+                    className={`relative text-left p-6 rounded-xl border transition-all card-hover ${
+                      miningTask === "clustering"
+                        ? "border-primary bg-primary/5 shadow-lg shadow-primary/10"
+                        : "border-border hover:border-primary/50"
+                    }`}
+                  >
+                    {miningTask === "clustering" && (
+                      <div className="absolute top-3 right-3 w-6 h-6 rounded-full bg-primary flex items-center justify-center">
+                        <CheckCircle2 className="w-4 h-4 text-primary-foreground" />
+                      </div>
+                    )}
+                    <div className="feature-icon w-12 h-12 mb-4">
+                      <Boxes className="w-6 h-6 text-primary" />
+                    </div>
+                    <h3 className="font-semibold text-lg mb-2">Clustering</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Group similar data points using K-Means or DBSCAN algorithms.
+                    </p>
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      <span className="px-2 py-1 rounded bg-secondary text-xs">K-Means</span>
+                      <span className="px-2 py-1 rounded bg-secondary text-xs">DBSCAN</span>
                     </div>
                   </button>
                 </div>
@@ -294,6 +329,14 @@ const Dashboard = () => {
             
             {step === "results" && miningTask === "classification" && classificationResults && (
               <ClassificationResults results={classificationResults} />
+            )}
+            
+            {step === "algorithm" && miningTask === "clustering" && (
+              <ClusteringConfig onResults={handleClusteringResults} />
+            )}
+            
+            {step === "results" && miningTask === "clustering" && clusteringResults && (
+              <ClusteringResults results={clusteringResults} />
             )}
           </div>
         </div>

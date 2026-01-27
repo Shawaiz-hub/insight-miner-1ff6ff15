@@ -84,6 +84,19 @@ interface ClassificationResult {
   execution_time: number;
 }
 
+interface ClusteringResult {
+  algorithm: string;
+  n_clusters: number;
+  cluster_labels: number[];
+  cluster_centers?: number[][];
+  silhouette_score: number;
+  inertia?: number;
+  cluster_sizes: { [key: string]: number };
+  feature_names: string[];
+  data_points: Array<{ features: number[]; cluster: number }>;
+  execution_time: number;
+}
+
 export function useMining() {
   const [isRunning, setIsRunning] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -343,6 +356,50 @@ export function useMining() {
     }
   }, []);
 
+  const runClustering = useCallback(async (
+    algorithm: string,
+    params: { n_clusters?: number; eps?: number; min_samples?: number }
+  ): Promise<ClusteringResult | null> => {
+    setIsRunning(true);
+    setError(null);
+    setProgress(10);
+
+    try {
+      const progressInterval = setInterval(() => {
+        setProgress((p) => Math.min(p + 15, 85));
+      }, 200);
+
+      const response = await fetch(`${API_BASE}/api/cluster`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          algorithm: algorithm.toLowerCase(),
+          ...params,
+        }),
+      });
+
+      clearInterval(progressInterval);
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Clustering failed");
+      }
+
+      setProgress(100);
+      return data;
+    } catch (err) {
+      console.error("Clustering error:", err);
+      setError(err instanceof Error ? err.message : "An error occurred during clustering");
+      return null;
+    } finally {
+      setIsRunning(false);
+      setTimeout(() => setProgress(0), 500);
+    }
+  }, []);
+
   const checkHealth = useCallback(async (): Promise<boolean> => {
     try {
       const response = await fetch(`${API_BASE}/api/health`);
@@ -359,6 +416,7 @@ export function useMining() {
     getRecommendation,
     runMining,
     runClassification,
+    runClustering,
     checkHealth,
     isRunning,
     error,
