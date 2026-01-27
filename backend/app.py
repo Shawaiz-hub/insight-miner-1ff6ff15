@@ -32,8 +32,11 @@ from itertools import combinations
 from sklearn.model_selection import train_test_split
 from sklearn.naive_bayes import GaussianNB
 from sklearn.tree import DecisionTreeClassifier
-from sklearn.preprocessing import LabelEncoder
-from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix, classification_report
+from sklearn.preprocessing import LabelEncoder, StandardScaler
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix, classification_report, silhouette_score
+
+# Clustering imports
+from sklearn.cluster import KMeans, DBSCAN
 
 app = Flask(__name__)
 CORS(app, origins=["*"])
@@ -1523,6 +1526,134 @@ def classify_data():
         return jsonify({'error': f'Classification failed: {str(e)}'}), 500
 
 
+@app.route('/api/cluster', methods=['POST'])
+def cluster_data():
+    """
+    Clustering mining endpoint.
+    Supports K-Means and DBSCAN algorithms.
+    """
+    try:
+        data = request.get_json() or {}
+        algorithm = data.get('algorithm', 'kmeans').lower()
+        n_clusters = data.get('n_clusters', 3)
+        eps = data.get('eps', 0.5)
+        min_samples = data.get('min_samples', 5)
+        
+        # Load the dataset
+        if not os.path.exists(TRANSACTIONS_FILE):
+            return jsonify({'error': 'No dataset uploaded. Please upload a dataset first.'}), 400
+        
+        df = pd.read_csv(TRANSACTIONS_FILE)
+        
+        # Prepare data for clustering
+        if 'items' in df.columns:
+            # Convert transaction format to feature matrix
+            all_items = set()
+            transactions = []
+            for items_str in df['items']:
+                items = [i.strip() for i in str(items_str).split(',') if i.strip()]
+                transactions.append(items)
+                all_items.update(items)
+            
+            all_items = sorted(all_items)
+            
+            # Create binary feature matrix
+            feature_matrix = []
+            for t in transactions:
+                row = [1 if item in t else 0 for item in all_items]
+                feature_matrix.append(row)
+            
+            X = pd.DataFrame(feature_matrix, columns=all_items)
+            feature_names = list(all_items)
+        else:
+            # Standard tabular format
+            X = df.copy()
+            feature_names = list(X.columns)
+        
+        # Encode categorical features
+        for col in X.columns:
+            if X[col].dtype == 'object':
+                le = LabelEncoder()
+                X[col] = le.fit_transform(X[col].astype(str))
+        
+        # Handle missing values
+        X = X.fillna(0)
+        
+        # Standardize features
+        scaler = StandardScaler()
+        X_scaled = scaler.fit_transform(X)
+        
+        start_time = time.time()
+        
+        if algorithm == 'kmeans':
+            clusterer = KMeans(n_clusters=n_clusters, random_state=42, n_init=10)
+            cluster_labels = clusterer.fit_predict(X_scaled)
+            cluster_centers = scaler.inverse_transform(clusterer.cluster_centers_).tolist()
+            inertia = float(clusterer.inertia_)
+        elif algorithm == 'dbscan':
+            clusterer = DBSCAN(eps=eps, min_samples=min_samples)
+            cluster_labels = clusterer.fit_predict(X_scaled)
+            cluster_centers = None
+            inertia = None
+        else:
+            return jsonify({'error': f'Unknown algorithm: {algorithm}. Use kmeans or dbscan'}), 400
+        
+        execution_time = time.time() - start_time
+        
+        # Calculate metrics
+        n_clusters_found = len(set(cluster_labels)) - (1 if -1 in cluster_labels else 0)
+        
+        # Calculate silhouette score (only if more than 1 cluster and not all noise)
+        if n_clusters_found > 1 and len(set(cluster_labels)) > 1:
+            # Filter out noise points for silhouette calculation
+            mask = cluster_labels != -1
+            if mask.sum() > 1:
+                sil_score = silhouette_score(X_scaled[mask], cluster_labels[mask])
+            else:
+                sil_score = 0.0
+        else:
+            sil_score = 0.0
+        
+        # Calculate cluster sizes
+        cluster_sizes = {}
+        for label in cluster_labels:
+            key = str(label)
+            cluster_sizes[key] = cluster_sizes.get(key, 0) + 1
+        
+        # Prepare data points for visualization (limit to first 1000 for performance)
+        max_points = min(1000, len(X_scaled))
+        data_points = []
+        for i in range(max_points):
+            data_points.append({
+                'features': X_scaled[i].tolist()[:10],  # Limit features for response size
+                'cluster': int(cluster_labels[i])
+            })
+        
+        result = {
+            'success': True,
+            'algorithm': algorithm,
+            'n_clusters': n_clusters_found,
+            'cluster_labels': cluster_labels.tolist(),
+            'silhouette_score': round(sil_score, 4),
+            'cluster_sizes': cluster_sizes,
+            'feature_names': feature_names[:10],  # Limit for response size
+            'data_points': data_points,
+            'execution_time': round(execution_time, 4)
+        }
+        
+        if cluster_centers:
+            result['cluster_centers'] = [[round(v, 4) for v in c[:10]] for c in cluster_centers]
+        if inertia is not None:
+            result['inertia'] = round(inertia, 4)
+        
+        return jsonify(result)
+    
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': f'Clustering failed: {str(e)}'}), 500
+
+
 if __name__ == '__main__':
     print("=" * 60)
     print("SmartMine Flask Backend - Enhanced Edition")
@@ -1537,6 +1668,7 @@ if __name__ == '__main__':
     print("  - Rule explosion management")
     print("  - Dataset profiling")
     print("  - Classification mining (Naive Bayes, Decision Tree)")
+    print("  - Clustering mining (K-Means, DBSCAN)")
     print("=" * 60)
     print("Starting server on http://localhost:5000")
     print("=" * 60)
