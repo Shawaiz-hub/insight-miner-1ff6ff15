@@ -1654,6 +1654,113 @@ def cluster_data():
         return jsonify({'error': f'Clustering failed: {str(e)}'}), 500
 
 
+@app.route('/api/elbow', methods=['POST'])
+def elbow_analysis():
+    """
+    Elbow method analysis endpoint.
+    Returns inertia values for different K values to help choose optimal clusters.
+    """
+    try:
+        data = request.get_json() or {}
+        max_k = min(data.get('max_k', 10), 15)  # Limit max K to 15
+        
+        # Load the dataset
+        if not os.path.exists(TRANSACTIONS_FILE):
+            return jsonify({'error': 'No dataset uploaded. Please upload a dataset first.'}), 400
+        
+        df = pd.read_csv(TRANSACTIONS_FILE)
+        
+        # Prepare data for clustering (same as cluster endpoint)
+        if 'items' in df.columns:
+            all_items = set()
+            transactions = []
+            for items_str in df['items']:
+                items = [i.strip() for i in str(items_str).split(',') if i.strip()]
+                transactions.append(items)
+                all_items.update(items)
+            
+            all_items = sorted(all_items)
+            feature_matrix = []
+            for t in transactions:
+                row = [1 if item in t else 0 for item in all_items]
+                feature_matrix.append(row)
+            
+            X = pd.DataFrame(feature_matrix, columns=all_items)
+        else:
+            X = df.copy()
+        
+        # Encode categorical features
+        for col in X.columns:
+            if X[col].dtype == 'object':
+                le = LabelEncoder()
+                X[col] = le.fit_transform(X[col].astype(str))
+        
+        X = X.fillna(0)
+        
+        # Standardize features
+        scaler = StandardScaler()
+        X_scaled = scaler.fit_transform(X)
+        
+        # Limit data for faster computation
+        if len(X_scaled) > 5000:
+            # Random sample for large datasets
+            np.random.seed(42)
+            indices = np.random.choice(len(X_scaled), 5000, replace=False)
+            X_scaled = X_scaled[indices]
+        
+        # Calculate inertia and silhouette for different K values
+        elbow_data = []
+        for k in range(2, max_k + 1):
+            kmeans = KMeans(n_clusters=k, random_state=42, n_init=10, max_iter=100)
+            cluster_labels = kmeans.fit_predict(X_scaled)
+            
+            inertia = float(kmeans.inertia_)
+            
+            # Calculate silhouette score
+            if len(set(cluster_labels)) > 1:
+                sil_score = silhouette_score(X_scaled, cluster_labels)
+            else:
+                sil_score = 0.0
+            
+            elbow_data.append({
+                'k': k,
+                'inertia': round(inertia, 2),
+                'silhouette': round(sil_score, 4)
+            })
+        
+        # Find optimal K using elbow detection (second derivative)
+        inertias = [d['inertia'] for d in elbow_data]
+        if len(inertias) >= 3:
+            # Calculate first and second derivatives
+            first_diff = np.diff(inertias)
+            second_diff = np.diff(first_diff)
+            
+            # Find the elbow point (maximum second derivative)
+            elbow_idx = np.argmax(second_diff) + 2  # +2 because we start at k=2
+            optimal_k = elbow_idx + 2  # Convert to k value
+            optimal_k = min(max(optimal_k, 2), max_k)
+        else:
+            optimal_k = 3
+        
+        # Also find max silhouette
+        silhouettes = [d['silhouette'] for d in elbow_data]
+        max_sil_idx = np.argmax(silhouettes)
+        silhouette_optimal_k = elbow_data[max_sil_idx]['k']
+        
+        return jsonify({
+            'success': True,
+            'elbow_data': elbow_data,
+            'optimal_k_elbow': optimal_k,
+            'optimal_k_silhouette': silhouette_optimal_k,
+            'recommendation': f"Elbow suggests K={optimal_k}, Silhouette suggests K={silhouette_optimal_k}"
+        })
+    
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': f'Elbow analysis failed: {str(e)}'}), 500
+
+
 if __name__ == '__main__':
     print("=" * 60)
     print("SmartMine Flask Backend - Enhanced Edition")
@@ -1669,6 +1776,7 @@ if __name__ == '__main__':
     print("  - Dataset profiling")
     print("  - Classification mining (Naive Bayes, Decision Tree)")
     print("  - Clustering mining (K-Means, DBSCAN)")
+    print("  - Elbow method for optimal K selection")
     print("=" * 60)
     print("Starting server on http://localhost:5000")
     print("=" * 60)
