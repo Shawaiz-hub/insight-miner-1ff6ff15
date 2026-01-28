@@ -61,6 +61,24 @@ dataset_profile = {}
 # DATASET PROFILING & ALGORITHM RECOMMENDATION
 # =============================================================================
 
+def convert_numpy_types(obj):
+    """Convert numpy types to Python native types for JSON serialization."""
+    if isinstance(obj, dict):
+        return {k: convert_numpy_types(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [convert_numpy_types(i) for i in obj]
+    elif isinstance(obj, np.bool_):
+        return bool(obj)
+    elif isinstance(obj, np.integer):
+        return int(obj)
+    elif isinstance(obj, np.floating):
+        return float(obj)
+    elif isinstance(obj, np.ndarray):
+        return obj.tolist()
+    else:
+        return obj
+
+
 def profile_dataset(transactions):
     """
     Profile dataset to determine characteristics for algorithm recommendation.
@@ -79,40 +97,40 @@ def profile_dataset(transactions):
             item_counts[item] += 1
     
     n_unique_items = len(item_counts)
-    avg_transaction_length = np.mean(transaction_lengths) if transaction_lengths else 0
-    max_transaction_length = max(transaction_lengths) if transaction_lengths else 0
-    min_transaction_length = min(transaction_lengths) if transaction_lengths else 0
+    avg_transaction_length = float(np.mean(transaction_lengths)) if transaction_lengths else 0.0
+    max_transaction_length = int(max(transaction_lengths)) if transaction_lengths else 0
+    min_transaction_length = int(min(transaction_lengths)) if transaction_lengths else 0
     
     # Calculate density (avg items / unique items)
-    density = avg_transaction_length / n_unique_items if n_unique_items > 0 else 0
+    density = avg_transaction_length / n_unique_items if n_unique_items > 0 else 0.0
     
     # Calculate sparsity
-    sparsity = 1 - density
+    sparsity = 1.0 - density
     
     # Estimate memory footprint (rough estimate in MB)
     estimated_memory_mb = (n_transactions * avg_transaction_length * 50) / (1024 * 1024)
     
     # Item frequency distribution
     frequencies = list(item_counts.values())
-    freq_std = np.std(frequencies) if frequencies else 0
-    freq_mean = np.mean(frequencies) if frequencies else 0
+    freq_std = float(np.std(frequencies)) if frequencies else 0.0
+    freq_mean = float(np.mean(frequencies)) if frequencies else 0.0
     
     profile = {
-        'n_transactions': n_transactions,
-        'n_unique_items': n_unique_items,
-        'avg_transaction_length': round(avg_transaction_length, 2),
-        'max_transaction_length': max_transaction_length,
-        'min_transaction_length': min_transaction_length,
-        'density': round(density, 4),
-        'sparsity': round(sparsity, 4),
-        'estimated_memory_mb': round(estimated_memory_mb, 2),
-        'freq_std': round(freq_std, 2),
-        'freq_mean': round(freq_mean, 2),
-        'is_large': n_transactions > 10000,
-        'is_very_large': n_transactions > 100000,
-        'is_dense': density > 0.1,
-        'is_sparse': sparsity > 0.9,
-        'has_long_transactions': avg_transaction_length > 20
+        'n_transactions': int(n_transactions),
+        'n_unique_items': int(n_unique_items),
+        'avg_transaction_length': round(float(avg_transaction_length), 2),
+        'max_transaction_length': int(max_transaction_length),
+        'min_transaction_length': int(min_transaction_length),
+        'density': round(float(density), 4),
+        'sparsity': round(float(sparsity), 4),
+        'estimated_memory_mb': round(float(estimated_memory_mb), 2),
+        'freq_std': round(float(freq_std), 2),
+        'freq_mean': round(float(freq_mean), 2),
+        'is_large': bool(n_transactions > 10000),
+        'is_very_large': bool(n_transactions > 100000),
+        'is_dense': bool(density > 0.1),
+        'is_sparse': bool(sparsity > 0.9),
+        'has_long_transactions': bool(avg_transaction_length > 20)
     }
     
     return profile
@@ -1058,58 +1076,73 @@ def upload_dataset():
     filename = file.filename.lower()
     
     try:
-        # Read file
+        # Read file with flexible parsing for variable-length rows
         if filename.endswith('.csv'):
-            df = pd.read_csv(file)
-        elif filename.endswith(('.xlsx', '.xls')):
-            df = pd.read_excel(file)
-        else:
-            return jsonify({'error': 'Unsupported file format. Use CSV or Excel.'}), 400
-        
-        # Handle different dataset formats
-        transactions = []
-        
-        if 'Items' in df.columns:
-            transactions = df['Items'].apply(
-                lambda x: [i.strip() for i in str(x).split(',') if i.strip()] if pd.notna(x) else []
-            ).tolist()
-        elif 'items' in df.columns:
-            transactions = df['items'].apply(
-                lambda x: [i.strip() for i in str(x).split(',') if i.strip()] if pd.notna(x) else []
-            ).tolist()
-        else:
-            for _, row in df.iterrows():
-                items = []
-                for val in row:
-                    if pd.notna(val):
-                        val_str = str(val).strip()
-                        if val_str and val_str.lower() not in ['nan', 'none', '']:
-                            if ',' in val_str:
-                                items.extend([i.strip() for i in val_str.split(',') if i.strip()])
-                            else:
-                                items.append(val_str)
+            # First try to read the raw content to handle variable columns
+            file_content = file.read().decode('utf-8', errors='ignore')
+            file.seek(0)  # Reset file pointer
+            
+            lines = file_content.strip().split('\n')
+            transactions = []
+            
+            # Check if first line looks like a header
+            first_line = lines[0].strip().lower() if lines else ''
+            start_idx = 1 if first_line in ['items', 'item', 'transaction', 'transactions'] or 'item' in first_line else 0
+            
+            for line in lines[start_idx:]:
+                line = line.strip()
+                if not line:
+                    continue
+                # Split by comma and clean items
+                items = [item.strip().strip('"').strip("'") for item in line.split(',')]
+                items = [item for item in items if item and item.lower() not in ['nan', 'none', 'null', '']]
                 if items:
                     transactions.append(items)
+        elif filename.endswith(('.xlsx', '.xls')):
+            df = pd.read_excel(file)
+            transactions = []
+            
+            # Handle different dataset formats
+            if 'Items' in df.columns or 'items' in df.columns:
+                col = 'Items' if 'Items' in df.columns else 'items'
+                transactions = df[col].apply(
+                    lambda x: [i.strip() for i in str(x).split(',') if i.strip()] if pd.notna(x) else []
+                ).tolist()
+            else:
+                for _, row in df.iterrows():
+                    items = []
+                    for val in row:
+                        if pd.notna(val):
+                            val_str = str(val).strip()
+                            if val_str and val_str.lower() not in ['nan', 'none', '']:
+                                if ',' in val_str:
+                                    items.extend([i.strip() for i in val_str.split(',') if i.strip()])
+                                else:
+                                    items.append(val_str)
+                    if items:
+                        transactions.append(items)
+        else:
+            return jsonify({'error': 'Unsupported file format. Use CSV or Excel.'}), 400
         
         transactions = [t for t in transactions if t]
         
         if not transactions:
             return jsonify({'error': 'No valid transactions found in dataset'}), 400
         
-        # Save processed transactions
+        # Save processed transactions as single column CSV
         items_str = [','.join(t) for t in transactions]
         processed_df = pd.DataFrame({'items': items_str})
         processed_df.to_csv(TRANSACTIONS_FILE, index=False)
         
         # Profile the dataset
-        dataset_profile = profile_dataset(transactions)
+        profile = profile_dataset(transactions)
         
         # Get statistics
         all_items = set()
         for t in transactions:
             all_items.update(t)
         
-        return jsonify({
+        return jsonify(convert_numpy_types({
             'success': True,
             'message': 'Dataset uploaded successfully',
             'stats': {
@@ -1117,10 +1150,12 @@ def upload_dataset():
                 'unique_items': len(all_items),
                 'avg_items_per_transaction': round(sum(len(t) for t in transactions) / len(transactions), 2)
             },
-            'profile': dataset_profile
-        })
+            'profile': profile
+        }))
     
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         return jsonify({'error': f'Failed to process file: {str(e)}'}), 500
 
 
@@ -1150,7 +1185,7 @@ def preprocess_dataset():
         for t in processed:
             all_items.update(t)
         
-        return jsonify({
+        return jsonify(convert_numpy_types({
             'success': True,
             'message': 'Preprocessing complete',
             'stats': {
@@ -1159,7 +1194,7 @@ def preprocess_dataset():
                 'avg_items_per_transaction': round(sum(len(t) for t in processed) / len(processed), 2)
             },
             'profile': dataset_profile
-        })
+        }))
     
     except FileNotFoundError as e:
         return jsonify({'error': str(e)}), 400
@@ -1184,11 +1219,11 @@ def recommend_algorithm_endpoint():
         
         recommendation = recommend_algorithm(dataset_profile, min_support)
         
-        return jsonify({
+        return jsonify(convert_numpy_types({
             'success': True,
             'profile': dataset_profile,
             'recommendation': recommendation
-        })
+        }))
     
     except FileNotFoundError as e:
         return jsonify({'error': str(e)}), 400
@@ -1301,16 +1336,16 @@ def get_dataset_info():
         # Top 10 most frequent items
         top_items = sorted(item_counts.items(), key=lambda x: -x[1])[:10]
         
-        return jsonify({
+        return jsonify(convert_numpy_types({
             'success': True,
             'stats': {
                 'transactions': len(transactions),
                 'unique_items': len(item_counts),
                 'avg_items_per_transaction': dataset_profile.get('avg_transaction_length', 0),
-                'top_items': [{'item': item, 'count': count} for item, count in top_items]
+                'top_items': [{'item': item, 'count': int(count)} for item, count in top_items]
             },
             'profile': dataset_profile
-        })
+        }))
     
     except FileNotFoundError as e:
         return jsonify({'error': str(e)}), 404
@@ -1503,22 +1538,22 @@ def classify_data():
         result = {
             'success': True,
             'algorithm': algorithm,
-            'accuracy': round(accuracy, 4),
-            'precision': round(precision, 4),
-            'recall': round(recall, 4),
-            'f1_score': round(f1, 4),
+            'accuracy': round(float(accuracy), 4),
+            'precision': round(float(precision), 4),
+            'recall': round(float(recall), 4),
+            'f1_score': round(float(f1), 4),
             'confusion_matrix': conf_matrix,
-            'class_labels': class_labels,
+            'class_labels': [str(label) for label in class_labels],
             'classification_report': class_report,
-            'execution_time': round(execution_time, 4),
-            'train_size': len(X_train),
-            'test_size': len(X_test)
+            'execution_time': round(float(execution_time), 4),
+            'train_size': int(len(X_train)),
+            'test_size': int(len(X_test))
         }
         
         if feature_importances:
             result['feature_importances'] = feature_importances[:20]  # Top 20
         
-        return jsonify(result)
+        return jsonify(convert_numpy_types(result))
     
     except Exception as e:
         import traceback
@@ -1646,7 +1681,7 @@ def cluster_data():
         if inertia is not None:
             result['inertia'] = round(inertia, 4)
         
-        return jsonify(result)
+        return jsonify(convert_numpy_types(result))
     
     except Exception as e:
         import traceback
@@ -1747,13 +1782,13 @@ def elbow_analysis():
         max_sil_idx = np.argmax(silhouettes)
         silhouette_optimal_k = elbow_data[max_sil_idx]['k']
         
-        return jsonify({
+        return jsonify(convert_numpy_types({
             'success': True,
             'elbow_data': elbow_data,
-            'optimal_k_elbow': optimal_k,
-            'optimal_k_silhouette': silhouette_optimal_k,
+            'optimal_k_elbow': int(optimal_k),
+            'optimal_k_silhouette': int(silhouette_optimal_k),
             'recommendation': f"Elbow suggests K={optimal_k}, Silhouette suggests K={silhouette_optimal_k}"
-        })
+        }))
     
     except Exception as e:
         import traceback
