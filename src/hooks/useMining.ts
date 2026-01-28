@@ -97,6 +97,19 @@ interface ClusteringResult {
   execution_time: number;
 }
 
+interface ElbowData {
+  k: number;
+  inertia: number;
+  silhouette: number;
+}
+
+interface ElbowResult {
+  elbow_data: ElbowData[];
+  optimal_k_elbow: number;
+  optimal_k_silhouette: number;
+  recommendation: string;
+}
+
 export function useMining() {
   const [isRunning, setIsRunning] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -117,21 +130,25 @@ export function useMining() {
         body: formData,
       });
 
-      const data = await response.json();
-
       if (!response.ok) {
-        throw new Error(data.error || "Upload failed");
+        const data = await response.json().catch(() => ({}));
+        const errorMessage = data.error || `Upload failed with status ${response.status}`;
+        setError(errorMessage);
+        return { success: false, message: errorMessage, stats: { transactions: 0, unique_items: 0, avg_items_per_transaction: 0 } };
       }
+
+      const data = await response.json();
 
       setDatasetStats(data.stats);
       if (data.profile) {
         setDatasetProfile(data.profile);
       }
-      return data;
+      return { ...data, success: true };
     } catch (err) {
       console.error("Upload error:", err);
-      setError(err instanceof Error ? err.message : "Failed to upload dataset");
-      return null;
+      const errorMessage = err instanceof Error ? err.message : "Failed to connect to backend";
+      setError(errorMessage);
+      return { success: false, message: errorMessage, stats: { transactions: 0, unique_items: 0, avg_items_per_transaction: 0 } };
     }
   }, []);
 
@@ -400,6 +417,32 @@ export function useMining() {
     }
   }, []);
 
+  const getElbowData = useCallback(async (maxK: number = 10): Promise<ElbowResult | null> => {
+    setError(null);
+    
+    try {
+      const response = await fetch(`${API_BASE}/api/elbow`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ max_k: maxK }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Elbow analysis failed");
+      }
+
+      return data;
+    } catch (err) {
+      console.error("Elbow analysis error:", err);
+      setError(err instanceof Error ? err.message : "Failed to perform elbow analysis");
+      return null;
+    }
+  }, []);
+
   const checkHealth = useCallback(async (): Promise<boolean> => {
     try {
       const response = await fetch(`${API_BASE}/api/health`);
@@ -417,6 +460,7 @@ export function useMining() {
     runMining,
     runClassification,
     runClustering,
+    getElbowData,
     checkHealth,
     isRunning,
     error,

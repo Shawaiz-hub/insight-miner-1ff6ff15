@@ -223,12 +223,22 @@ export function DataUpload({ onUpload }: DataUploadProps) {
             disabled={isUploading}
             onClick={async () => {
               setIsUploading(true);
-              const result = await uploadDataset(new File([preview.transactions.map(t => t.join(",")).join("\n")], preview.name, { type: "text/csv" }));
-              setIsUploading(false);
-              if (result?.success) {
-                onUpload(preview);
-              } else {
-                setError("Failed to upload to backend");
+              setError(null);
+              try {
+                // Create CSV with proper header row
+                const csvContent = "items\n" + preview.transactions.map(t => t.join(",")).join("\n");
+                const file = new File([csvContent], preview.name, { type: "text/csv" });
+                const result = await uploadDataset(file);
+                if (result?.success) {
+                  onUpload(preview);
+                } else {
+                  setError(result?.message || "Failed to upload to backend. Make sure the backend server is running.");
+                }
+              } catch (err) {
+                console.error("Upload error:", err);
+                setError("Failed to connect to backend. Make sure the Flask server is running on port 5000.");
+              } finally {
+                setIsUploading(false);
               }
             }}
           >
