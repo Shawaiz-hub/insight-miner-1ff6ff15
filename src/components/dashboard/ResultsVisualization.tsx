@@ -32,14 +32,26 @@ export function ResultsVisualization({ rules, itemsets }: ResultsVisualizationPr
     }));
   }, [rules]);
 
-  // Top items by frequency
+  // Top items by frequency - Fixed to handle all itemsets and extract individual items
   const itemFrequency = useMemo(() => {
     const freq: Record<string, number> = {};
-    itemsets
-      .filter((is) => is.items.length === 1)
-      .forEach((is) => {
-        freq[is.items[0]] = is.count;
+    
+    // First try single-item itemsets
+    const singleItemsets = itemsets.filter((is) => is.items.length === 1);
+    
+    if (singleItemsets.length > 0) {
+      singleItemsets.forEach((is) => {
+        freq[is.items[0]] = (freq[is.items[0]] || 0) + is.count;
       });
+    } else {
+      // Fallback: extract items from all itemsets and count occurrences
+      itemsets.forEach((is) => {
+        is.items.forEach((item) => {
+          freq[item] = (freq[item] || 0) + is.count;
+        });
+      });
+    }
+    
     return Object.entries(freq)
       .sort((a, b) => b[1] - a[1])
       .slice(0, 10)

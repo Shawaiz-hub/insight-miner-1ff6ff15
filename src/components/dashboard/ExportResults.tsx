@@ -11,12 +11,39 @@ import {
 import { Download, FileJson, FileSpreadsheet, FileText, Check } from "lucide-react";
 import type { AssociationRule, FrequentItemset, MiningParams } from "@/pages/Dashboard";
 
-interface ExportResultsProps {
-  rules: AssociationRule[];
-  itemsets: FrequentItemset[];
+interface ClusteringData {
   algorithm: string;
-  params: MiningParams;
-  transactionCount: number;
+  n_clusters: number;
+  cluster_labels: number[];
+  silhouette_score: number;
+  cluster_sizes: { [key: string]: number };
+  data_points: Array<{ features: number[]; cluster: number }>;
+}
+
+interface ClassificationData {
+  algorithm: string;
+  accuracy: number;
+  precision: number;
+  recall: number;
+  f1_score: number;
+  confusion_matrix: number[][];
+  class_labels: string[];
+  classification_report: string;
+}
+
+interface ExportResultsProps {
+  // Association rule mining
+  rules?: AssociationRule[];
+  itemsets?: FrequentItemset[];
+  algorithm?: string;
+  params?: MiningParams;
+  transactionCount?: number;
+  // Clustering
+  clusteringData?: ClusteringData;
+  // Classification
+  classificationData?: ClassificationData;
+  // Export type
+  exportType?: "association" | "clustering" | "classification";
 }
 
 const algorithmNames: Record<string, string> = {
@@ -27,19 +54,30 @@ const algorithmNames: Record<string, string> = {
   carma: "CARMA",
   charm: "CHARM",
   maxminer: "MaxMiner",
+  kmeans: "K-Means",
+  dbscan: "DBSCAN",
+  hierarchical: "Hierarchical",
+  decision_tree: "Decision Tree",
+  random_forest: "Random Forest",
+  naive_bayes: "Naive Bayes",
+  svm: "SVM",
+  knn: "K-NN",
 };
 
 export function ExportResults({
-  rules,
-  itemsets,
-  algorithm,
+  rules = [],
+  itemsets = [],
+  algorithm = "unknown",
   params,
-  transactionCount,
+  transactionCount = 0,
+  clusteringData,
+  classificationData,
+  exportType = "association",
 }: ExportResultsProps) {
   const [exportedFormat, setExportedFormat] = useState<string | null>(null);
   const [isOpen, setIsOpen] = useState(false);
 
-  const generateCSV = () => {
+  const generateAssociationCSV = () => {
     const headers = ["Rule #", "Antecedent", "Consequent", "Support (%)", "Confidence (%)", "Lift"];
     const rows = rules.map((rule) => [
       rule.id,
@@ -52,11 +90,11 @@ export function ExportResults({
 
     const configSection = [
       "# Mining Configuration",
-      `Algorithm,${algorithmNames[algorithm]}`,
-      `Min Support,${(params.minSupport * 100).toFixed(1)}%`,
-      `Min Confidence,${(params.minConfidence * 100).toFixed(1)}%`,
-      `Max Rule Length,${params.maxRuleLength}`,
-      `Lift Threshold,${params.liftThreshold}`,
+      `Algorithm,${algorithmNames[algorithm] || algorithm}`,
+      `Min Support,${params ? (params.minSupport * 100).toFixed(1) : 0}%`,
+      `Min Confidence,${params ? (params.minConfidence * 100).toFixed(1) : 0}%`,
+      `Max Rule Length,${params?.maxRuleLength || 0}`,
+      `Lift Threshold,${params?.liftThreshold || 0}`,
       `Transactions Processed,${transactionCount}`,
       `Total Rules Found,${rules.length}`,
       `Total Itemsets Found,${itemsets.length}`,
@@ -64,67 +102,250 @@ export function ExportResults({
       "# Association Rules",
     ];
 
-    const csv = [
-      ...configSection,
-      headers.join(","),
-      ...rows.map((row) => row.join(",")),
-    ].join("\n");
+    return [...configSection, headers.join(","), ...rows.map((row) => row.join(","))].join("\n");
+  };
 
-    return csv;
+  const generateClusteringCSV = () => {
+    if (!clusteringData) return "";
+    
+    const configSection = [
+      "# Clustering Results",
+      `Algorithm,${algorithmNames[clusteringData.algorithm] || clusteringData.algorithm}`,
+      `Number of Clusters,${clusteringData.n_clusters}`,
+      `Silhouette Score,${clusteringData.silhouette_score.toFixed(4)}`,
+      "",
+      "# Cluster Sizes",
+      ...Object.entries(clusteringData.cluster_sizes).map(([cluster, size]) => 
+        `Cluster ${cluster},${size} points`
+      ),
+      "",
+      "# Data Point Assignments",
+      "Point Index,Cluster Label,Features",
+    ];
+    
+    const dataRows = clusteringData.data_points.map((point, idx) => 
+      `${idx},${point.cluster},"${point.features.join(", ")}"`
+    );
+    
+    return [...configSection, ...dataRows].join("\n");
+  };
+
+  const generateClassificationCSV = () => {
+    if (!classificationData) return "";
+    
+    const configSection = [
+      "# Classification Results",
+      `Algorithm,${algorithmNames[classificationData.algorithm] || classificationData.algorithm}`,
+      `Accuracy,${(classificationData.accuracy * 100).toFixed(2)}%`,
+      `Precision,${(classificationData.precision * 100).toFixed(2)}%`,
+      `Recall,${(classificationData.recall * 100).toFixed(2)}%`,
+      `F1 Score,${(classificationData.f1_score * 100).toFixed(2)}%`,
+      "",
+      "# Confusion Matrix",
+      `Classes,${classificationData.class_labels.join(",")}`,
+      ...classificationData.confusion_matrix.map((row, idx) => 
+        `${classificationData.class_labels[idx]},${row.join(",")}`
+      ),
+      "",
+      "# Detailed Report",
+      classificationData.classification_report,
+    ];
+    
+    return configSection.join("\n");
+  };
+
+  const generateCSV = () => {
+    switch (exportType) {
+      case "clustering":
+        return generateClusteringCSV();
+      case "classification":
+        return generateClassificationCSV();
+      default:
+        return generateAssociationCSV();
+    }
   };
 
   const generateJSON = () => {
-    const data = {
+    const baseData = {
       metadata: {
-        algorithm: algorithmNames[algorithm],
-        algorithmId: algorithm,
-        parameters: {
-          minSupport: params.minSupport,
-          minConfidence: params.minConfidence,
-          maxRuleLength: params.maxRuleLength,
-          liftThreshold: params.liftThreshold,
-        },
-        statistics: {
-          transactionCount,
-          rulesFound: rules.length,
-          itemsetsFound: itemsets.length,
-          avgConfidence:
-            rules.length > 0
-              ? rules.reduce((acc, r) => acc + r.confidence, 0) / rules.length
-              : 0,
-          avgLift:
-            rules.length > 0
-              ? rules.reduce((acc, r) => acc + r.lift, 0) / rules.length
-              : 0,
-        },
         exportDate: new Date().toISOString(),
+        exportType,
       },
-      frequentItemsets: itemsets.map((is) => ({
-        items: is.items,
-        support: is.support,
-        count: is.count,
-      })),
-      associationRules: rules.map((rule) => ({
-        id: rule.id,
-        antecedent: rule.antecedent,
-        consequent: rule.consequent,
-        support: rule.support,
-        confidence: rule.confidence,
-        lift: rule.lift,
-      })),
     };
 
-    return JSON.stringify(data, null, 2);
+    switch (exportType) {
+      case "clustering":
+        return JSON.stringify({
+          ...baseData,
+          clustering: clusteringData,
+        }, null, 2);
+      case "classification":
+        return JSON.stringify({
+          ...baseData,
+          classification: classificationData,
+        }, null, 2);
+      default:
+        return JSON.stringify({
+          ...baseData,
+          metadata: {
+            ...baseData.metadata,
+            algorithm: algorithmNames[algorithm] || algorithm,
+            algorithmId: algorithm,
+            parameters: params,
+            statistics: {
+              transactionCount,
+              rulesFound: rules.length,
+              itemsetsFound: itemsets.length,
+              avgConfidence: rules.length > 0
+                ? rules.reduce((acc, r) => acc + r.confidence, 0) / rules.length
+                : 0,
+              avgLift: rules.length > 0
+                ? rules.reduce((acc, r) => acc + r.lift, 0) / rules.length
+                : 0,
+            },
+          },
+          frequentItemsets: itemsets.map((is) => ({
+            items: is.items,
+            support: is.support,
+            count: is.count,
+          })),
+          associationRules: rules.map((rule) => ({
+            id: rule.id,
+            antecedent: rule.antecedent,
+            consequent: rule.consequent,
+            support: rule.support,
+            confidence: rule.confidence,
+            lift: rule.lift,
+          })),
+        }, null, 2);
+    }
   };
 
-  const generatePDF = () => {
-    // Generate HTML content for PDF-like report
-    const html = `
+  const generateHTML = () => {
+    const title = exportType === "clustering" 
+      ? `Clustering Report - ${algorithmNames[clusteringData?.algorithm || ""] || clusteringData?.algorithm}`
+      : exportType === "classification"
+      ? `Classification Report - ${algorithmNames[classificationData?.algorithm || ""] || classificationData?.algorithm}`
+      : `Mining Report - ${algorithmNames[algorithm] || algorithm}`;
+
+    const statsHtml = exportType === "clustering" && clusteringData ? `
+      <div class="stats-grid">
+        <div class="stat-box">
+          <div class="stat-value">${clusteringData.n_clusters}</div>
+          <div class="stat-label">Clusters</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-value">${clusteringData.silhouette_score.toFixed(3)}</div>
+          <div class="stat-label">Silhouette Score</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-value">${clusteringData.data_points.length}</div>
+          <div class="stat-label">Data Points</div>
+        </div>
+      </div>
+      <h2>Cluster Sizes</h2>
+      <table class="config-table">
+        ${Object.entries(clusteringData.cluster_sizes).map(([cluster, size]) => 
+          `<tr><td>Cluster ${cluster}</td><td>${size} points</td></tr>`
+        ).join("")}
+      </table>
+    ` : exportType === "classification" && classificationData ? `
+      <div class="stats-grid">
+        <div class="stat-box">
+          <div class="stat-value">${(classificationData.accuracy * 100).toFixed(1)}%</div>
+          <div class="stat-label">Accuracy</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-value">${(classificationData.precision * 100).toFixed(1)}%</div>
+          <div class="stat-label">Precision</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-value">${(classificationData.recall * 100).toFixed(1)}%</div>
+          <div class="stat-label">Recall</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-value">${(classificationData.f1_score * 100).toFixed(1)}%</div>
+          <div class="stat-label">F1 Score</div>
+        </div>
+      </div>
+      <h2>Confusion Matrix</h2>
+      <table class="rules-table">
+        <thead>
+          <tr>
+            <th></th>
+            ${classificationData.class_labels.map(l => `<th>${l}</th>`).join("")}
+          </tr>
+        </thead>
+        <tbody>
+          ${classificationData.confusion_matrix.map((row, idx) => `
+            <tr>
+              <td><strong>${classificationData.class_labels[idx]}</strong></td>
+              ${row.map(val => `<td>${val}</td>`).join("")}
+            </tr>
+          `).join("")}
+        </tbody>
+      </table>
+    ` : `
+      <h2>Configuration</h2>
+      <table class="config-table">
+        <tr><td>Algorithm</td><td>${algorithmNames[algorithm] || algorithm}</td></tr>
+        <tr><td>Minimum Support</td><td>${params ? (params.minSupport * 100).toFixed(1) : 0}%</td></tr>
+        <tr><td>Minimum Confidence</td><td>${params ? (params.minConfidence * 100).toFixed(1) : 0}%</td></tr>
+        <tr><td>Maximum Rule Length</td><td>${params?.maxRuleLength || 0}</td></tr>
+      </table>
+      <div class="stats-grid">
+        <div class="stat-box">
+          <div class="stat-value">${transactionCount}</div>
+          <div class="stat-label">Transactions</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-value">${itemsets.length}</div>
+          <div class="stat-label">Itemsets</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-value">${rules.length}</div>
+          <div class="stat-label">Rules</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-value">${rules.length > 0 ? ((rules.reduce((a, r) => a + r.confidence, 0) / rules.length) * 100).toFixed(1) : 0}%</div>
+          <div class="stat-label">Avg Confidence</div>
+        </div>
+      </div>
+      <h2>Discovered Rules</h2>
+      <table class="rules-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Antecedent</th>
+            <th>→</th>
+            <th>Consequent</th>
+            <th>Support</th>
+            <th>Confidence</th>
+            <th>Lift</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rules.map((rule) => `
+            <tr>
+              <td>${rule.id}</td>
+              <td>${rule.antecedent.join(", ")}</td>
+              <td style="text-align: center;">→</td>
+              <td>${rule.consequent.join(", ")}</td>
+              <td>${(rule.support * 100).toFixed(1)}%</td>
+              <td>${(rule.confidence * 100).toFixed(1)}%</td>
+              <td>${rule.lift.toFixed(2)}</td>
+            </tr>
+          `).join("")}
+        </tbody>
+      </table>
+    `;
+
+    return `
 <!DOCTYPE html>
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>Mining Report - ${algorithmNames[algorithm]}</title>
+  <title>${title}</title>
   <style>
     body { font-family: Arial, sans-serif; margin: 40px; color: #333; }
     h1 { color: #0ea5e9; border-bottom: 2px solid #0ea5e9; padding-bottom: 10px; }
@@ -142,76 +363,14 @@ export function ExportResults({
   </style>
 </head>
 <body>
-  <h1>🔍 SmartMine Mining Report</h1>
-  
-  <h2>Configuration</h2>
-  <table class="config-table">
-    <tr><td>Algorithm</td><td>${algorithmNames[algorithm]}</td></tr>
-    <tr><td>Minimum Support</td><td>${(params.minSupport * 100).toFixed(1)}%</td></tr>
-    <tr><td>Minimum Confidence</td><td>${(params.minConfidence * 100).toFixed(1)}%</td></tr>
-    <tr><td>Maximum Rule Length</td><td>${params.maxRuleLength}</td></tr>
-    <tr><td>Lift Threshold</td><td>${params.liftThreshold}</td></tr>
-  </table>
-  
-  <h2>Statistics</h2>
-  <div class="stats-grid">
-    <div class="stat-box">
-      <div class="stat-value">${transactionCount}</div>
-      <div class="stat-label">Transactions</div>
-    </div>
-    <div class="stat-box">
-      <div class="stat-value">${itemsets.length}</div>
-      <div class="stat-label">Itemsets</div>
-    </div>
-    <div class="stat-box">
-      <div class="stat-value">${rules.length}</div>
-      <div class="stat-label">Rules</div>
-    </div>
-    <div class="stat-box">
-      <div class="stat-value">${rules.length > 0 ? ((rules.reduce((a, r) => a + r.confidence, 0) / rules.length) * 100).toFixed(1) : 0}%</div>
-      <div class="stat-label">Avg Confidence</div>
-    </div>
-  </div>
-  
-  <h2>Discovered Rules</h2>
-  <table class="rules-table">
-    <thead>
-      <tr>
-        <th>#</th>
-        <th>Antecedent</th>
-        <th>→</th>
-        <th>Consequent</th>
-        <th>Support</th>
-        <th>Confidence</th>
-        <th>Lift</th>
-      </tr>
-    </thead>
-    <tbody>
-      ${rules
-        .map(
-          (rule) => `
-        <tr>
-          <td>${rule.id}</td>
-          <td>${rule.antecedent.join(", ")}</td>
-          <td style="text-align: center;">→</td>
-          <td>${rule.consequent.join(", ")}</td>
-          <td>${(rule.support * 100).toFixed(1)}%</td>
-          <td>${(rule.confidence * 100).toFixed(1)}%</td>
-          <td>${rule.lift.toFixed(2)}</td>
-        </tr>
-      `
-        )
-        .join("")}
-    </tbody>
-  </table>
-  
+  <h1>🔍 SmartMine ${title}</h1>
+  ${statsHtml}
   <div class="footer">
     Generated by SmartMine on ${new Date().toLocaleString()}
   </div>
 </body>
 </html>
     `;
-    return html;
   };
 
   const downloadFile = (content: string, filename: string, type: string) => {
@@ -228,7 +387,12 @@ export function ExportResults({
 
   const handleExport = (format: "csv" | "json" | "html") => {
     const timestamp = new Date().toISOString().split("T")[0];
-    const filename = `smartmine-${algorithm}-${timestamp}`;
+    const algoName = exportType === "clustering" 
+      ? clusteringData?.algorithm 
+      : exportType === "classification" 
+      ? classificationData?.algorithm 
+      : algorithm;
+    const filename = `smartmine-${exportType}-${algoName}-${timestamp}`;
 
     switch (format) {
       case "csv":
@@ -238,13 +402,19 @@ export function ExportResults({
         downloadFile(generateJSON(), `${filename}.json`, "application/json");
         break;
       case "html":
-        downloadFile(generatePDF(), `${filename}.html`, "text/html");
+        downloadFile(generateHTML(), `${filename}.html`, "text/html");
         break;
     }
 
     setExportedFormat(format);
     setTimeout(() => setExportedFormat(null), 2000);
   };
+
+  const itemCount = exportType === "clustering" 
+    ? `${clusteringData?.n_clusters || 0} clusters`
+    : exportType === "classification"
+    ? `${classificationData?.class_labels?.length || 0} classes`
+    : `${rules.length} rules and ${itemsets.length} itemsets`;
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -256,10 +426,9 @@ export function ExportResults({
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Export Mining Results</DialogTitle>
+          <DialogTitle>Export {exportType.charAt(0).toUpperCase() + exportType.slice(1)} Results</DialogTitle>
           <DialogDescription>
-            Choose a format to export your {rules.length} discovered rules and {itemsets.length}{" "}
-            itemsets.
+            Choose a format to export your {itemCount}.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-3 pt-4">
