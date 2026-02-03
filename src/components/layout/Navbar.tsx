@@ -1,6 +1,6 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Database, ChevronDown, Menu, User, LogOut, History, Settings } from "lucide-react";
+import { Database, ChevronDown, Menu, User, LogOut, History, Settings, Bookmark } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -116,6 +116,12 @@ export function Navbar() {
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
+                  <Link to="/saved-rules" className="cursor-pointer">
+                    <Bookmark className="mr-2 h-4 w-4" />
+                    Saved Rules
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
                   <Link to="/dashboard" className="cursor-pointer">
                     <Settings className="mr-2 h-4 w-4" />
                     Dashboard
@@ -159,6 +165,9 @@ export function Navbar() {
                 <>
                   <Link to="/history" className="text-lg font-medium">
                     History
+                  </Link>
+                  <Link to="/saved-rules" className="text-lg font-medium">
+                    Saved Rules
                   </Link>
                   <Link to="/profile" className="text-lg font-medium">
                     Profile

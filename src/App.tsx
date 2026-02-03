@@ -12,6 +12,7 @@ import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
 import History from "./pages/History";
 import Profile from "./pages/Profile";
+import SavedRules from "./pages/SavedRules";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -30,6 +31,7 @@ const App = () => (
             <Route path="/docs" element={<Docs />} />
             <Route path="/history" element={<History />} />
             <Route path="/profile" element={<Profile />} />
+            <Route path="/saved-rules" element={<SavedRules />} />
             <Route path="/privacy" element={<Privacy />} />
             <Route path="/terms" element={<Terms />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

@@ -1,7 +1,11 @@
 import { useState, useCallback } from "react";
 import type { AssociationRule, FrequentItemset, MiningParams } from "@/pages/Dashboard";
 
-const API_BASE = "http://localhost:5000";
+// API Configuration - uses environment variable in production
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 
+  (import.meta.env.PROD 
+    ? 'https://your-username.pythonanywhere.com'  // Update with your deployment URL
+    : 'http://localhost:5000');
 
 interface MiningResult {
   rules: AssociationRule[];

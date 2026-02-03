@@ -12,6 +12,7 @@ import { ClassificationConfig, type ClassificationResults as ClassificationResul
 import { ClassificationResults } from "@/components/dashboard/ClassificationResults";
 import { ClusteringConfig, type ClusteringResults as ClusteringResultsType } from "@/components/dashboard/ClusteringConfig";
 import { ClusteringResults } from "@/components/dashboard/ClusteringResults";
+import { NextPurchasePrediction } from "@/components/dashboard/NextPurchasePrediction";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -320,10 +321,16 @@ const Dashboard = () => {
             
             {step === "results" && miningTask === "association" && (
               <Tabs defaultValue="table" className="space-y-6">
-                <TabsList className="grid w-full grid-cols-3"><TabsTrigger value="table">Rules Table</TabsTrigger><TabsTrigger value="charts">Charts</TabsTrigger><TabsTrigger value="network">Network</TabsTrigger></TabsList>
+                <TabsList className="grid w-full grid-cols-4">
+                  <TabsTrigger value="table">Rules Table</TabsTrigger>
+                  <TabsTrigger value="charts">Charts</TabsTrigger>
+                  <TabsTrigger value="network">Network</TabsTrigger>
+                  <TabsTrigger value="predict">Predict</TabsTrigger>
+                </TabsList>
                 <TabsContent value="table"><ResultsTable rules={results} algorithm={selectedAlgorithm} params={params} /></TabsContent>
                 <TabsContent value="charts"><ResultsVisualization rules={results} itemsets={itemsets} /></TabsContent>
                 <TabsContent value="network"><RuleNetwork rules={results} /></TabsContent>
+                <TabsContent value="predict"><NextPurchasePrediction rules={results} /></TabsContent>
               </Tabs>
             )}
             
