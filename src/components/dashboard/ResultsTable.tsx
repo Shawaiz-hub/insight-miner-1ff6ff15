@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { ArrowUpDown, ArrowUp, ArrowDown, ChevronRight, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { SavedRulesButton } from "./SavedRulesButton";
 import type { AssociationRule, MiningParams } from "@/pages/Dashboard";
 
 interface ResultsTableProps {
@@ -145,6 +146,7 @@ export function ResultsTable({ rules, algorithm, params }: ResultsTableProps) {
                   Lift <SortIcon columnKey="lift" />
                 </Button>
               </th>
+              <th className="text-left py-3 px-4 font-medium w-12">Save</th>
             </tr>
           </thead>
           <tbody>
@@ -188,6 +190,9 @@ export function ResultsTable({ rules, algorithm, params }: ResultsTableProps) {
                 </td>
                 <td className={`py-3 px-4 font-mono text-sm ${getLiftColor(rule.lift)}`}>
                   {rule.lift.toFixed(2)}
+                </td>
+                <td className="py-3 px-4">
+                  <SavedRulesButton rule={rule} />
                 </td>
               </tr>
             ))}

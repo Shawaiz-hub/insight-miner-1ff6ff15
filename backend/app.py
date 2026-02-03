@@ -1796,6 +1796,174 @@ def elbow_analysis():
         return jsonify({'error': f'Elbow analysis failed: {str(e)}'}), 500
 
 
+# Global variable to store the latest mining rules
+latest_mining_rules = []
+
+
+@app.route('/api/predict', methods=['POST'])
+def predict_next_item():
+    """
+    Predict next purchase based on association rules.
+    Input: {"item": "Milk"}
+    Output: List of recommendations sorted by confidence
+    """
+    global latest_mining_rules
+    
+    try:
+        data = request.get_json() or {}
+        item = data.get('item', '').strip()
+        
+        if not item:
+            return jsonify({'error': 'Please provide an item name'}), 400
+        
+        # Use the latest mined rules or load from file if available
+        if not latest_mining_rules:
+            return jsonify({
+                'success': True,
+                'recommendations': [],
+                'message': 'No rules available. Please run mining first.'
+            })
+        
+        # Normalize item for matching
+        item_lower = item.lower()
+        
+        # Filter rules where antecedent contains the given item
+        matching_rules = []
+        for rule in latest_mining_rules:
+            antecedent = rule.get('antecedent', [])
+            # Check if any item in antecedent matches (case-insensitive partial match)
+            if any(item_lower in ant.lower() or ant.lower() in item_lower for ant in antecedent):
+                matching_rules.append(rule)
+        
+        # Sort by confidence (descending)
+        matching_rules.sort(key=lambda x: x.get('confidence', 0), reverse=True)
+        
+        # Extract unique recommendations
+        seen_recommendations = set()
+        recommendations = []
+        
+        for rule in matching_rules:
+            for consequent in rule.get('consequent', []):
+                cons_lower = consequent.lower()
+                if cons_lower not in seen_recommendations and cons_lower != item_lower:
+                    seen_recommendations.add(cons_lower)
+                    recommendations.append({
+                        'recommendation': consequent,
+                        'confidence': round(rule.get('confidence', 0), 4),
+                        'lift': round(rule.get('lift', 1.0), 4),
+                        'antecedent': rule.get('antecedent', [])
+                    })
+            
+            if len(recommendations) >= 10:  # Limit to top 10
+                break
+        
+        if not recommendations:
+            return jsonify({
+                'success': True,
+                'recommendations': [],
+                'message': f'No recommendation found for "{item}"'
+            })
+        
+        return jsonify({
+            'success': True,
+            'recommendations': recommendations,
+            'query_item': item,
+            'total_matches': len(matching_rules)
+        })
+    
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': f'Prediction failed: {str(e)}'}), 500
+
+
+# Update the mine endpoint to store rules globally
+original_mine = app.view_functions.get('mine_rules')
+
+
+@app.route('/api/mine', methods=['POST'], endpoint='mine_rules_updated')
+def mine_rules_updated():
+    """Enhanced mine endpoint that stores rules for prediction."""
+    global latest_mining_rules
+    
+    try:
+        data = request.get_json() or {}
+        algorithm = data.get('algorithm', 'fp-growth').lower()
+        min_support = float(data.get('min_support', 0.1))
+        min_confidence = float(data.get('min_confidence', 0.5))
+        max_rules = int(data.get('max_rules', 5000))
+        
+        start_time = time.time()
+        
+        # Load transactions
+        transactions = load_transactions()
+        
+        if not transactions:
+            return jsonify({'error': 'No transactions loaded. Please upload a dataset first.'}), 400
+        
+        load_time = time.time() - start_time
+        mine_start = time.time()
+        
+        # Select algorithm
+        algorithm_map = {
+            'apriori': mine_apriori,
+            'fp-growth': mine_fpgrowth,
+            'fpgrowth': mine_fpgrowth,
+            'eclat': mine_eclat,
+            'h-mine': mine_hmine,
+            'hmine': mine_hmine,
+            'carma': mine_carma,
+            'charm': mine_charm,
+            'closet': mine_closet,
+            'maxminer': mine_maxminer,
+        }
+        
+        mine_func = algorithm_map.get(algorithm)
+        if not mine_func:
+            return jsonify({'error': f'Unknown algorithm: {algorithm}'}), 400
+        
+        rules = mine_func(transactions, min_support, min_confidence)
+        
+        mine_time = time.time() - mine_start
+        total_time = time.time() - start_time
+        
+        # Apply rule pruning if needed
+        original_count = len(rules)
+        was_pruned = False
+        
+        if len(rules) > max_rules:
+            rules = prune_redundant_rules(rules, max_rules)
+            was_pruned = True
+        
+        # Store rules globally for prediction
+        latest_mining_rules = rules
+        
+        return jsonify({
+            'success': True,
+            'algorithm': algorithm,
+            'rules': rules,
+            'rules_count': len(rules),
+            'original_rules_count': original_count,
+            'was_pruned': was_pruned,
+            'execution_time': {
+                'load_seconds': round(load_time, 3),
+                'mine_seconds': round(mine_time, 3),
+                'total_seconds': round(total_time, 3)
+            },
+            'parameters': {
+                'min_support': min_support,
+                'min_confidence': min_confidence
+            }
+        })
+    
+    except FileNotFoundError as e:
+        return jsonify({'error': str(e)}), 404
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
+
 if __name__ == '__main__':
     print("=" * 60)
     print("SmartMine Flask Backend - Enhanced Edition")
@@ -1812,6 +1980,7 @@ if __name__ == '__main__':
     print("  - Classification mining (Naive Bayes, Decision Tree)")
     print("  - Clustering mining (K-Means, DBSCAN)")
     print("  - Elbow method for optimal K selection")
+    print("  - Next purchase prediction")
     print("=" * 60)
     print("Starting server on http://localhost:5000")
     print("=" * 60)
