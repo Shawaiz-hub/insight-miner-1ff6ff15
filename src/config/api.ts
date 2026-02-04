@@ -8,7 +8,7 @@
  */
 export const API_BASE = import.meta.env.VITE_API_BASE_URL || 
   (import.meta.env.PROD 
-    ? 'https://your-username.pythonanywhere.com'  // Update this with your PythonAnywhere URL
+    ? 'https://bakend-dim.up.railway.app'  // Update this with your PythonAnywhere URL
     : 'http://localhost:5000');
 
 /**
