@@ -170,17 +170,17 @@ const Dashboard = () => {
       <Navbar />
       <main className="pt-24 pb-12 relative z-10">
         <div className="container max-w-6xl">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8 animate-fade-in">
+          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-6 md:mb-8 animate-fade-in">
             <div>
-              <h1 className="text-3xl font-bold mb-2">Mining Dashboard</h1>
-              <p className="text-muted-foreground">Upload data, configure algorithms, and discover patterns</p>
+              <h1 className="text-2xl sm:text-3xl font-bold mb-1 sm:mb-2">Mining Dashboard</h1>
+              <p className="text-muted-foreground text-sm sm:text-base">Upload data, configure algorithms, and discover patterns</p>
             </div>
-            <div className="flex items-center gap-3">
-              <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium ${backendConnected === true ? "bg-green-500/10 text-green-500 border border-green-500/20" : backendConnected === false ? "bg-destructive/10 text-destructive border border-destructive/20" : "bg-muted text-muted-foreground"}`}>
-                {backendConnected === true ? <><CheckCircle2 className="w-3 h-3" /> Backend Connected</> : backendConnected === false ? <><XCircle className="w-3 h-3" /> Backend Offline</> : "Checking..."}
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3 w-full lg:w-auto">
+              <div className={`flex items-center gap-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full text-xs font-medium ${backendConnected === true ? "bg-green-500/10 text-green-500 border border-green-500/20" : backendConnected === false ? "bg-destructive/10 text-destructive border border-destructive/20" : "bg-muted text-muted-foreground"}`}>
+                {backendConnected === true ? <><CheckCircle2 className="w-3 h-3" /> <span className="hidden sm:inline">Backend</span> Connected</> : backendConnected === false ? <><XCircle className="w-3 h-3" /> <span className="hidden sm:inline">Backend</span> Offline</> : "Checking..."}
               </div>
               {step === "results" && miningTask === "association" && results.length > 0 && <ExportResults rules={results} itemsets={itemsets} algorithm={selectedAlgorithm} params={params} transactionCount={transactionCount} />}
-              <Button variant="outline" onClick={handleReset} className="gap-2"><RotateCcw className="w-4 h-4" />Reset</Button>
+              <Button variant="outline" onClick={handleReset} className="gap-2 text-sm"><RotateCcw className="w-4 h-4" /><span className="hidden sm:inline">Reset</span></Button>
             </div>
           </div>
 
@@ -192,20 +192,20 @@ const Dashboard = () => {
             </div>
           )}
 
-          <div className="flex items-center gap-2 mb-8 overflow-x-auto pb-2 animate-fade-in" style={{ animationDelay: "0.1s" }}>
+          <div className="flex items-center gap-1 sm:gap-2 mb-6 md:mb-8 overflow-x-auto pb-2 scrollbar-hide animate-fade-in" style={{ animationDelay: "0.1s" }}>
             {steps.map((s, index) => (
-              <div key={s.key} className="flex items-center">
-                <button onClick={() => index <= currentStepIndex && setStep(s.key as MiningStep)} disabled={index > currentStepIndex} className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-300 hover-scale workflow-step ${s.key === step ? "bg-primary text-primary-foreground shadow-lg shadow-primary/30 active" : index < currentStepIndex ? "bg-secondary text-secondary-foreground hover:bg-secondary/80" : "bg-muted text-muted-foreground cursor-not-allowed"}`}>
-                  <s.icon className="w-4 h-4" /><span className="text-sm font-medium whitespace-nowrap">{s.label}</span>
+              <div key={s.key} className="flex items-center flex-shrink-0">
+                <button onClick={() => index <= currentStepIndex && setStep(s.key as MiningStep)} disabled={index > currentStepIndex} className={`flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 rounded-lg transition-all duration-300 hover-scale workflow-step ${s.key === step ? "bg-primary text-primary-foreground shadow-lg shadow-primary/30 active" : index < currentStepIndex ? "bg-secondary text-secondary-foreground hover:bg-secondary/80" : "bg-muted text-muted-foreground cursor-not-allowed"}`}>
+                  <s.icon className="w-3.5 h-3.5 sm:w-4 sm:h-4" /><span className="text-xs sm:text-sm font-medium whitespace-nowrap">{s.label}</span>
                 </button>
-                {index < steps.length - 1 && <div className={`w-8 h-0.5 mx-2 transition-all duration-500 ${index < currentStepIndex ? "bg-gradient-to-r from-primary to-primary/50" : "bg-border"}`} />}
+                {index < steps.length - 1 && <div className={`w-4 sm:w-8 h-0.5 mx-1 sm:mx-2 transition-all duration-500 ${index < currentStepIndex ? "bg-gradient-to-r from-primary to-primary/50" : "bg-border"}`} />}
               </div>
             ))}
           </div>
 
           {error && <div className="mb-6 p-4 rounded-xl bg-destructive/10 border border-destructive/30 flex items-center gap-3"><AlertCircle className="w-5 h-5 text-destructive" /><p className="text-sm text-destructive">{error}</p></div>}
 
-          <div className="glass-card-elevated rounded-2xl p-6 md:p-8 animate-fade-in-scale" style={{ animationDelay: "0.2s" }}>
+          <div className="glass-card-elevated rounded-xl sm:rounded-2xl p-4 sm:p-6 md:p-8 animate-fade-in-scale" style={{ animationDelay: "0.2s" }}>
             {step === "upload" && <DataUpload onUpload={handleDatasetUpload} />}
             
             {step === "preprocess" && dataset && <PreprocessingConfig dataset={dataset} stats={datasetStats} onComplete={handlePreprocessingComplete} />}
@@ -217,7 +217,7 @@ const Dashboard = () => {
                   <p className="text-muted-foreground">Choose the type of data mining to perform</p>
                 </div>
                 
-                <div className="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 max-w-4xl mx-auto">
                   <button
                     onClick={() => handleTaskSelect("association")}
                     className={`relative text-left p-6 rounded-xl border transition-all card-hover ${
@@ -320,12 +320,12 @@ const Dashboard = () => {
             )}
             
             {step === "results" && miningTask === "association" && (
-              <Tabs defaultValue="table" className="space-y-6">
-                <TabsList className="grid w-full grid-cols-4">
-                  <TabsTrigger value="table">Rules Table</TabsTrigger>
-                  <TabsTrigger value="charts">Charts</TabsTrigger>
-                  <TabsTrigger value="network">Network</TabsTrigger>
-                  <TabsTrigger value="predict">Predict</TabsTrigger>
+              <Tabs defaultValue="table" className="space-y-4 sm:space-y-6">
+                <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 h-auto">
+                  <TabsTrigger value="table" className="text-xs sm:text-sm py-2">Rules Table</TabsTrigger>
+                  <TabsTrigger value="charts" className="text-xs sm:text-sm py-2">Charts</TabsTrigger>
+                  <TabsTrigger value="network" className="text-xs sm:text-sm py-2">Network</TabsTrigger>
+                  <TabsTrigger value="predict" className="text-xs sm:text-sm py-2">Predict</TabsTrigger>
                 </TabsList>
                 <TabsContent value="table"><ResultsTable rules={results} algorithm={selectedAlgorithm} params={params} /></TabsContent>
                 <TabsContent value="charts"><ResultsVisualization rules={results} itemsets={itemsets} /></TabsContent>

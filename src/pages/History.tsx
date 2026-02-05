@@ -91,18 +91,18 @@ export default function History() {
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
-      <main className="container py-24">
-        <div className="flex items-center justify-between mb-8">
+      <main className="container py-20 sm:py-24 px-4 sm:px-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 sm:mb-8">
           <div>
-            <h1 className="text-3xl font-bold flex items-center gap-3">
-              <HistoryIcon className="w-8 h-8 text-primary" />
+            <h1 className="text-2xl sm:text-3xl font-bold flex items-center gap-2 sm:gap-3">
+              <HistoryIcon className="w-6 h-6 sm:w-8 sm:h-8 text-primary" />
               Mining History
             </h1>
-            <p className="text-muted-foreground mt-2">
+            <p className="text-muted-foreground mt-1 sm:mt-2 text-sm sm:text-base">
               View and manage your past data mining sessions
             </p>
           </div>
-          <Button asChild>
+          <Button asChild className="w-full sm:w-auto">
             <Link to="/dashboard">
               New Mining Session
               <ArrowRight className="ml-2 w-4 h-4" />
@@ -127,26 +127,27 @@ export default function History() {
           <div className="space-y-4">
             {history.map((item) => (
               <Card key={item.id} className="bg-secondary/30 border-border hover:bg-secondary/50 transition-colors">
-                <CardContent className="py-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <Badge className={getTaskTypeColor(item.task_type)}>
+                <CardContent className="py-3 sm:py-4 px-3 sm:px-6">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="flex items-center gap-3 sm:gap-4">
+                      <Badge className={`${getTaskTypeColor(item.task_type)} text-xs`}>
                         {item.task_type}
                       </Badge>
                       <div>
-                        <h3 className="font-semibold">
+                        <h3 className="font-semibold text-sm sm:text-base">
                           {item.algorithm.toUpperCase()}
                         </h3>
-                        <p className="text-sm text-muted-foreground">
+                        <p className="text-xs sm:text-sm text-muted-foreground">
                           {item.dataset_name || "Unnamed dataset"}
                         </p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-6">
-                      <div className="text-right">
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <Clock className="w-4 h-4" />
-                          {format(new Date(item.created_at), "MMM d, yyyy h:mm a")}
+                    <div className="flex items-center justify-between sm:justify-end gap-3 sm:gap-6">
+                      <div className="text-left sm:text-right">
+                        <div className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm text-muted-foreground">
+                          <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                          <span className="hidden sm:inline">{format(new Date(item.created_at), "MMM d, yyyy h:mm a")}</span>
+                          <span className="sm:hidden">{format(new Date(item.created_at), "MMM d, yyyy")}</span>
                         </div>
                         {item.execution_time_ms && (
                           <p className="text-xs text-muted-foreground">
@@ -158,7 +159,7 @@ export default function History() {
                         variant="ghost"
                         size="icon"
                         onClick={() => deleteHistoryItem(item.id)}
-                        className="text-muted-foreground hover:text-destructive"
+                        className="text-muted-foreground hover:text-destructive h-8 w-8 sm:h-10 sm:w-10"
                       >
                         <Trash2 className="w-4 h-4" />
                       </Button>

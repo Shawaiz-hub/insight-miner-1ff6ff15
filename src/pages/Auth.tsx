@@ -134,26 +134,26 @@ export default function Auth() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
+    <div className="min-h-screen flex items-center justify-center bg-background p-4 sm:p-6">
       <div className="w-full max-w-md">
         {/* Logo */}
-        <Link to="/" className="flex items-center justify-center gap-2 mb-8">
-          <div className="feature-icon w-10 h-10">
-            <Database className="w-6 h-6 text-primary" />
+        <Link to="/" className="flex items-center justify-center gap-2 mb-6 sm:mb-8">
+          <div className="feature-icon w-9 h-9 sm:w-10 sm:h-10">
+            <Database className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
           </div>
-          <span className="text-2xl font-bold">
+          <span className="text-xl sm:text-2xl font-bold">
             Smart<span className="text-primary">Mine</span>
           </span>
         </Link>
 
         <Card className="border-border/50 bg-card/50 backdrop-blur">
-          <CardHeader className="text-center pb-4">
-            <CardTitle className="text-2xl">Welcome</CardTitle>
-            <CardDescription>
+          <CardHeader className="text-center pb-3 sm:pb-4 px-4 sm:px-6">
+            <CardTitle className="text-xl sm:text-2xl">Welcome</CardTitle>
+            <CardDescription className="text-sm">
               Sign in to access your data mining dashboard
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="px-4 sm:px-6">
             {error && (
               <Alert variant="destructive" className="mb-4">
                 <AlertCircle className="h-4 w-4" />
@@ -168,13 +168,13 @@ export default function Auth() {
             )}
 
             <Tabs defaultValue="login" className="w-full">
-              <TabsList className="grid w-full grid-cols-2 mb-6">
-                <TabsTrigger value="login">Sign In</TabsTrigger>
-                <TabsTrigger value="signup">Sign Up</TabsTrigger>
+              <TabsList className="grid w-full grid-cols-2 mb-4 sm:mb-6">
+                <TabsTrigger value="login" className="text-sm">Sign In</TabsTrigger>
+                <TabsTrigger value="signup" className="text-sm">Sign Up</TabsTrigger>
               </TabsList>
-              
+
               <TabsContent value="login">
-                <form onSubmit={handleLogin} className="space-y-4">
+                <form onSubmit={handleLogin} className="space-y-3 sm:space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="login-email">Email</Label>
                     <div className="relative">
@@ -221,7 +221,7 @@ export default function Auth() {
               </TabsContent>
               
               <TabsContent value="signup">
-                <form onSubmit={handleSignup} className="space-y-4">
+                <form onSubmit={handleSignup} className="space-y-3 sm:space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="signup-name">Full Name (optional)</Label>
                     <div className="relative">
@@ -299,7 +299,7 @@ export default function Auth() {
               </TabsContent>
             </Tabs>
 
-            <div className="relative my-6">
+            <div className="relative my-4 sm:my-6">
               <div className="absolute inset-0 flex items-center">
                 <span className="w-full border-t border-border" />
               </div>
@@ -338,7 +338,7 @@ export default function Auth() {
           </CardContent>
         </Card>
 
-        <p className="text-center text-sm text-muted-foreground mt-6">
+        <p className="text-center text-xs sm:text-sm text-muted-foreground mt-4 sm:mt-6">
           By continuing, you agree to our{" "}
           <Link to="/terms" className="text-primary hover:underline">
             Terms of Service

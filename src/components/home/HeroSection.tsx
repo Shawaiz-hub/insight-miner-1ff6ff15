@@ -23,23 +23,23 @@ export function HeroSection() {
       <div className="absolute inset-0 bg-grid opacity-20" />
       <div className="absolute inset-0 bg-gradient-radial" />
       
-      {/* Floating Geometric Shapes */}
-      <div className="absolute top-1/4 left-[10%] w-32 h-32 geometric-shape animate-float-slow" style={{ animationDelay: "0s" }} />
-      <div className="absolute top-1/3 right-[15%] w-24 h-24 geometric-shape animate-float-slow" style={{ animationDelay: "-5s" }} />
-      <div className="absolute bottom-1/4 left-[20%] w-20 h-20 geometric-shape animate-float-slow" style={{ animationDelay: "-10s" }} />
-      <div className="absolute bottom-1/3 right-[10%] w-28 h-28 geometric-shape animate-float-slow rotate-45" style={{ animationDelay: "-3s" }} />
-      <div className="absolute top-[60%] left-[5%] w-16 h-16 geometric-shape animate-float-slow rotate-12" style={{ animationDelay: "-7s" }} />
+      {/* Floating Geometric Shapes - hidden on mobile for performance */}
+      <div className="hidden md:block absolute top-1/4 left-[10%] w-24 lg:w-32 h-24 lg:h-32 geometric-shape animate-float-slow" style={{ animationDelay: "0s" }} />
+      <div className="hidden md:block absolute top-1/3 right-[15%] w-20 lg:w-24 h-20 lg:h-24 geometric-shape animate-float-slow" style={{ animationDelay: "-5s" }} />
+      <div className="hidden lg:block absolute bottom-1/4 left-[20%] w-20 h-20 geometric-shape animate-float-slow" style={{ animationDelay: "-10s" }} />
+      <div className="hidden lg:block absolute bottom-1/3 right-[10%] w-28 h-28 geometric-shape animate-float-slow rotate-45" style={{ animationDelay: "-3s" }} />
+      <div className="hidden xl:block absolute top-[60%] left-[5%] w-16 h-16 geometric-shape animate-float-slow rotate-12" style={{ animationDelay: "-7s" }} />
       
-      {/* Glow Orbs */}
-      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-primary/10 rounded-full blur-[120px] animate-pulse-slow" />
-      <div className="absolute bottom-1/4 right-1/4 w-[400px] h-[400px] bg-accent/5 rounded-full blur-[100px] animate-pulse-slow" style={{ animationDelay: "-2s" }} />
+      {/* Glow Orbs - reduced size on mobile */}
+      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[300px] md:w-[600px] h-[300px] md:h-[600px] bg-primary/10 rounded-full blur-[80px] md:blur-[120px] animate-pulse-slow" />
+      <div className="hidden sm:block absolute bottom-1/4 right-1/4 w-[200px] md:w-[400px] h-[200px] md:h-[400px] bg-accent/5 rounded-full blur-[60px] md:blur-[100px] animate-pulse-slow" style={{ animationDelay: "-2s" }} />
 
-      <div className="container relative z-10 py-20">
+      <div className="container relative z-10 py-12 sm:py-16 md:py-20 px-4 sm:px-6">
         <div className="max-w-4xl mx-auto text-center">
           {/* Badges */}
-          <div className="flex flex-wrap justify-center gap-2 mb-8 stagger-children">
+          <div className="flex flex-wrap justify-center gap-2 mb-6 sm:mb-8 stagger-children">
             {badges.map((badge) => (
-              <span key={badge} className="section-badge hover-scale">
+              <span key={badge} className="section-badge hover-scale text-xs sm:text-sm">
                 {badge}
               </span>
             ))}
@@ -47,7 +47,7 @@ export function HeroSection() {
 
           {/* Main heading with gradient animation */}
           <h1 
-            className="text-4xl md:text-6xl lg:text-7xl font-bold mb-6 leading-tight opacity-0 animate-fade-in"
+            className="text-3xl sm:text-4xl md:text-6xl lg:text-7xl font-bold mb-4 sm:mb-6 leading-tight opacity-0 animate-fade-in"
             style={{ animationDelay: "0.2s" }}
           >
             <span className="inline-block animate-fade-in" style={{ animationDelay: "0.1s" }}>The</span>{" "}
@@ -115,18 +115,18 @@ export function HeroSection() {
 
           {/* Feature pills */}
           <div 
-            className="grid grid-cols-2 md:grid-cols-4 gap-4 stagger-children"
+            className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 stagger-children"
             style={{ animationDelay: "0.6s" }}
           >
             {features.map((feature, index) => (
               <div
                 key={feature.label}
-                className="glass-card rounded-xl p-4 card-hover hover-lift opacity-0 animate-fade-in"
+                className="glass-card rounded-lg sm:rounded-xl p-3 sm:p-4 card-hover hover-lift opacity-0 animate-fade-in"
                 style={{ animationDelay: `${1.1 + index * 0.1}s` }}
               >
-                <feature.icon className="w-6 h-6 text-primary mb-2 mx-auto transition-transform duration-300 group-hover:scale-110" />
-                <p className="font-medium text-sm">{feature.label}</p>
-                <p className="text-xs text-muted-foreground">{feature.desc}</p>
+                <feature.icon className="w-5 h-5 sm:w-6 sm:h-6 text-primary mb-2 mx-auto transition-transform duration-300 group-hover:scale-110" />
+                <p className="font-medium text-xs sm:text-sm">{feature.label}</p>
+                <p className="text-xs text-muted-foreground hidden sm:block">{feature.desc}</p>
               </div>
             ))}
           </div>

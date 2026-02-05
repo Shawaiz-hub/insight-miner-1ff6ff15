@@ -63,53 +63,53 @@ const algorithms = [
 
 export function AlgorithmsSection() {
   return (
-    <section className="py-24">
+    <section className="py-16 sm:py-24 px-4 sm:px-6">
       <div className="container">
-        <div className="text-center mb-16">
-          <span className="section-badge mb-4">Powered by Research</span>
-          <h2 className="text-3xl md:text-5xl font-bold mb-4">
+        <div className="text-center mb-10 sm:mb-16">
+          <span className="section-badge mb-3 sm:mb-4 text-xs sm:text-sm">Powered by Research</span>
+          <h2 className="text-2xl sm:text-3xl md:text-5xl font-bold mb-3 sm:mb-4">
             Seven Powerful Algorithms,{" "}
             <span className="gradient-text">One Platform</span>
           </h2>
-          <p className="text-muted-foreground max-w-2xl mx-auto">
+          <p className="text-muted-foreground max-w-2xl mx-auto text-sm sm:text-base">
             State-of-the-art algorithms designed for accuracy, efficiency, and
             actionable pattern discovery.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
           {algorithms.slice(0, 6).map((algo, index) => (
             <div
               key={algo.name}
-              className="glass-card rounded-2xl p-6 card-hover animate-fade-in"
+              className="glass-card rounded-xl sm:rounded-2xl p-4 sm:p-6 card-hover animate-fade-in"
               style={{ animationDelay: `${index * 0.1}s` }}
             >
               <div
-                className="w-12 h-12 rounded-xl flex items-center justify-center mb-4"
+                className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl flex items-center justify-center mb-3 sm:mb-4"
                 style={{
                   background: `linear-gradient(135deg, ${algo.color.split(" ")[0].replace("from-", "")}, transparent)`,
                 }}
               >
-                <algo.icon className="w-6 h-6 text-primary" />
+                <algo.icon className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
               </div>
-              <h3 className="text-xl font-semibold mb-2">{algo.name}</h3>
-              <p className="text-muted-foreground text-sm mb-4">
+              <h3 className="text-lg sm:text-xl font-semibold mb-1.5 sm:mb-2">{algo.name}</h3>
+              <p className="text-muted-foreground text-xs sm:text-sm mb-3 sm:mb-4">
                 {algo.description}
               </p>
-              <ul className="space-y-2 mb-6">
+              <ul className="space-y-1.5 sm:space-y-2 mb-4 sm:mb-6">
                 {algo.features.map((feature) => (
                   <li
                     key={feature}
-                    className="flex items-center gap-2 text-sm text-muted-foreground"
+                    className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground"
                   >
-                    <Check className="w-4 h-4 text-primary" />
+                    <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary flex-shrink-0" />
                     {feature}
                   </li>
                 ))}
               </ul>
-              <Button variant="outline" size="sm" asChild className="w-full">
+              <Button variant="outline" size="sm" asChild className="w-full text-xs sm:text-sm">
                 <Link to={algo.href}>
-                  Try Now <ArrowRight className="w-4 h-4" />
+                  Try Now <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 </Link>
               </Button>
             </div>
@@ -117,32 +117,32 @@ export function AlgorithmsSection() {
         </div>
 
         {/* Featured algorithm card */}
-        <div className="mt-8 glass-card rounded-2xl p-8 glow-border animate-fade-in" style={{ animationDelay: "0.6s" }}>
-          <div className="flex flex-col md:flex-row items-center gap-8">
-            <div className="flex-1">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-12 h-12 rounded-xl bg-purple-500/20 flex items-center justify-center">
-                  <Maximize className="w-6 h-6 text-primary" />
+        <div className="mt-6 sm:mt-8 glass-card rounded-xl sm:rounded-2xl p-6 sm:p-8 glow-border animate-fade-in" style={{ animationDelay: "0.6s" }}>
+          <div className="flex flex-col md:flex-row items-center gap-6 sm:gap-8">
+            <div className="flex-1 text-center md:text-left">
+              <div className="flex items-center gap-3 mb-3 sm:mb-4 justify-center md:justify-start">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-purple-500/20 flex items-center justify-center">
+                  <Maximize className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
                 </div>
-                <h3 className="text-2xl font-bold">{algorithms[6].name}</h3>
+                <h3 className="text-xl sm:text-2xl font-bold">{algorithms[6].name}</h3>
               </div>
-              <p className="text-muted-foreground mb-4">
+              <p className="text-muted-foreground mb-3 sm:mb-4 text-sm sm:text-base">
                 {algorithms[6].description}
               </p>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-2 justify-center md:justify-start">
                 {algorithms[6].features.map((feature) => (
                   <span
                     key={feature}
-                    className="px-3 py-1 rounded-full bg-secondary text-sm"
+                    className="px-2 sm:px-3 py-1 rounded-full bg-secondary text-xs sm:text-sm"
                   >
                     {feature}
                   </span>
                 ))}
               </div>
             </div>
-            <Button variant="hero" size="lg" asChild>
+            <Button variant="hero" size="lg" asChild className="w-full md:w-auto">
               <Link to={algorithms[6].href}>
-                Use MaxMiner <ArrowRight className="w-5 h-5" />
+                Use MaxMiner <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5" />
               </Link>
             </Button>
           </div>
