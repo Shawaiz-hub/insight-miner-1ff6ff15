@@ -117,22 +117,23 @@ const SavedRules = () => {
       
       <Navbar />
       
-      <main className="pt-24 pb-12 relative z-10">
-        <div className="container max-w-5xl">
-          <div className="flex items-center gap-4 mb-8 animate-fade-in">
+      <main className="pt-20 sm:pt-24 pb-12 relative z-10">
+        <div className="container max-w-5xl px-4 sm:px-6">
+          <div className="flex items-center gap-3 sm:gap-4 mb-6 sm:mb-8 animate-fade-in">
             <Button
               variant="ghost"
               size="icon"
               onClick={() => navigate(-1)}
+              className="h-8 w-8 sm:h-10 sm:w-10"
             >
-              <ArrowLeft className="w-5 h-5" />
+              <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
             </Button>
             <div>
-              <h1 className="text-3xl font-bold flex items-center gap-3">
-                <Bookmark className="w-8 h-8 text-primary" />
+              <h1 className="text-2xl sm:text-3xl font-bold flex items-center gap-2 sm:gap-3">
+                <Bookmark className="w-6 h-6 sm:w-8 sm:h-8 text-primary" />
                 Saved Rules
               </h1>
-              <p className="text-muted-foreground mt-1">
+              <p className="text-muted-foreground mt-1 text-sm sm:text-base">
                 Your bookmarked association rules
               </p>
             </div>
@@ -200,23 +201,23 @@ const SavedRules = () => {
                           </div>
                         </div>
                         
-                        <div className="flex items-center gap-3 text-sm">
-                          <Badge variant="outline" className="font-mono">
-                            Support: {rule.support ? (rule.support * 100).toFixed(1) : "—"}%
+                        <div className="flex flex-wrap items-center gap-2 text-xs sm:text-sm">
+                          <Badge variant="outline" className="font-mono text-xs">
+                            Sup: {rule.support ? (rule.support * 100).toFixed(1) : "—"}%
                           </Badge>
                           <Badge 
                             variant="outline" 
-                            className={getConfidenceColor(rule.confidence)}
+                            className={`text-xs ${getConfidenceColor(rule.confidence)}`}
                           >
-                            Confidence: {rule.confidence ? (rule.confidence * 100).toFixed(1) : "—"}%
+                            Conf: {rule.confidence ? (rule.confidence * 100).toFixed(1) : "—"}%
                           </Badge>
                           <Badge 
                             variant="outline"
-                            className={getLiftColor(rule.lift)}
+                            className={`text-xs ${getLiftColor(rule.lift)}`}
                           >
                             Lift: {rule.lift?.toFixed(2) || "—"}
                           </Badge>
-                          <span className="text-muted-foreground">
+                          <span className="text-muted-foreground text-xs hidden sm:inline">
                             Saved {new Date(rule.created_at).toLocaleDateString()}
                           </span>
                         </div>

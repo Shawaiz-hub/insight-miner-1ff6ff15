@@ -40,30 +40,30 @@ export function Navbar() {
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-xl">
-      <div className="container flex h-16 items-center justify-between">
-        <Link to="/" className="flex items-center gap-2">
-          <div className="feature-icon w-9 h-9">
-            <Database className="w-5 h-5 text-primary" />
+      <div className="container flex h-14 sm:h-16 items-center justify-between px-4 sm:px-6">
+        <Link to="/" className="flex items-center gap-1.5 sm:gap-2">
+          <div className="feature-icon w-7 h-7 sm:w-9 sm:h-9">
+            <Database className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
           </div>
-          <span className="text-xl font-bold">
+          <span className="text-lg sm:text-xl font-bold">
             Smart<span className="text-primary">Mine</span>
           </span>
         </Link>
 
         {/* Desktop Navigation */}
-        <nav className="hidden md:flex items-center gap-8">
+        <nav className="hidden lg:flex items-center gap-6 xl:gap-8">
           <Link
             to="/"
-            className={cn("nav-link", isHome && "nav-link-active")}
+            className={cn("nav-link text-sm", isHome && "nav-link-active")}
           >
             Home
           </Link>
-          <Link to="/dashboard" className="nav-link">
+          <Link to="/dashboard" className="nav-link text-sm">
             Dashboard
           </Link>
           <DropdownMenu>
-            <DropdownMenuTrigger className="nav-link flex items-center gap-1">
-              Algorithms <ChevronDown className="w-4 h-4" />
+            <DropdownMenuTrigger className="nav-link flex items-center gap-1 text-sm">
+              Algorithms <ChevronDown className="w-3.5 h-3.5" />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
               {algorithms.map((algo) => (
@@ -73,19 +73,19 @@ export function Navbar() {
               ))}
             </DropdownMenuContent>
           </DropdownMenu>
-          <Link to="/docs" className="nav-link">
+          <Link to="/docs" className="nav-link text-sm">
             Documentation
           </Link>
         </nav>
 
-        <div className="hidden md:flex items-center gap-3">
+        <div className="hidden lg:flex items-center gap-2 sm:gap-3">
           {isLoading ? null : user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative h-10 w-10 rounded-full">
-                  <Avatar className="h-10 w-10">
+                <Button variant="ghost" className="relative h-9 w-9 sm:h-10 sm:w-10 rounded-full">
+                  <Avatar className="h-9 w-9 sm:h-10 sm:w-10">
                     <AvatarImage src={user.user_metadata?.avatar_url} />
-                    <AvatarFallback className="bg-primary/20 text-primary">
+                    <AvatarFallback className="bg-primary/20 text-primary text-sm">
                       {userInitials}
                     </AvatarFallback>
                   </Avatar>
@@ -136,10 +136,10 @@ export function Navbar() {
             </DropdownMenu>
           ) : (
             <>
-              <Button variant="ghost" asChild>
+              <Button variant="ghost" asChild size="sm">
                 <Link to="/auth">Sign In</Link>
               </Button>
-              <Button variant="heroOutline" asChild>
+              <Button variant="heroOutline" asChild size="sm">
                 <Link to="/auth">Get Started</Link>
               </Button>
             </>
@@ -148,43 +148,45 @@ export function Navbar() {
 
         {/* Mobile Navigation */}
         <Sheet>
-          <SheetTrigger asChild className="md:hidden">
-            <Button variant="ghost" size="icon">
+          <SheetTrigger asChild className="lg:hidden">
+            <Button variant="ghost" size="icon" className="h-9 w-9">
               <Menu className="w-5 h-5" />
             </Button>
           </SheetTrigger>
-          <SheetContent side="right" className="w-72">
-            <nav className="flex flex-col gap-4 mt-8">
-              <Link to="/" className="text-lg font-medium">
+          <SheetContent side="right" className="w-72 px-4 sm:px-6">
+            <nav className="flex flex-col gap-3 sm:gap-4 mt-6 sm:mt-8">
+              <Link to="/" className="text-base sm:text-lg font-medium">
                 Home
               </Link>
-              <Link to="/dashboard" className="text-lg font-medium">
+              <Link to="/dashboard" className="text-base sm:text-lg font-medium">
                 Dashboard
               </Link>
               {user && (
                 <>
-                  <Link to="/history" className="text-lg font-medium">
+                  <Link to="/history" className="text-base sm:text-lg font-medium">
                     History
                   </Link>
-                  <Link to="/saved-rules" className="text-lg font-medium">
+                  <Link to="/saved-rules" className="text-base sm:text-lg font-medium">
                     Saved Rules
                   </Link>
-                  <Link to="/profile" className="text-lg font-medium">
+                  <Link to="/profile" className="text-base sm:text-lg font-medium">
                     Profile
                   </Link>
                 </>
               )}
-              <div className="border-t border-border pt-4">
-                <p className="text-sm text-muted-foreground mb-2">Algorithms</p>
-                {algorithms.map((algo) => (
-                  <Link
-                    key={algo.name}
-                    to={algo.href}
-                    className="block py-2 text-muted-foreground hover:text-foreground"
-                  >
-                    {algo.name}
-                  </Link>
-                ))}
+              <div className="border-t border-border pt-3 sm:pt-4">
+                <p className="text-xs sm:text-sm text-muted-foreground mb-2">Algorithms</p>
+                <div className="grid grid-cols-2 gap-2">
+                  {algorithms.map((algo) => (
+                    <Link
+                      key={algo.name}
+                      to={algo.href}
+                      className="block py-1.5 sm:py-2 text-sm text-muted-foreground hover:text-foreground"
+                    >
+                      {algo.name}
+                    </Link>
+                  ))}
+                </div>
               </div>
               {user ? (
                 <Button variant="destructive" className="mt-4" onClick={handleSignOut}>

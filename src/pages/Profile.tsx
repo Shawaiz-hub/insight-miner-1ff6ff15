@@ -101,26 +101,26 @@ export default function ProfilePage() {
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
-      <main className="container py-24 max-w-2xl">
-        <h1 className="text-3xl font-bold mb-8">Profile Settings</h1>
+      <main className="container py-20 sm:py-24 px-4 sm:px-6 max-w-2xl">
+        <h1 className="text-2xl sm:text-3xl font-bold mb-6 sm:mb-8">Profile Settings</h1>
 
         <Card className="bg-secondary/30 border-border mb-6">
-          <CardHeader>
-            <CardTitle>Your Profile</CardTitle>
+          <CardHeader className="px-4 sm:px-6">
+            <CardTitle className="text-lg sm:text-xl">Your Profile</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="flex items-center gap-6">
-              <Avatar className="w-20 h-20">
+          <CardContent className="space-y-6 px-4 sm:px-6">
+            <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6 text-center sm:text-left">
+              <Avatar className="w-16 h-16 sm:w-20 sm:h-20">
                 <AvatarImage src={profile?.avatar_url || undefined} />
-                <AvatarFallback className="text-2xl bg-primary/20 text-primary">
+                <AvatarFallback className="text-xl sm:text-2xl bg-primary/20 text-primary">
                   {initials}
                 </AvatarFallback>
               </Avatar>
               <div>
-                <h2 className="text-xl font-semibold">
+                <h2 className="text-lg sm:text-xl font-semibold">
                   {fullName || "No name set"}
                 </h2>
-                <p className="text-muted-foreground">{user?.email}</p>
+                <p className="text-muted-foreground text-sm sm:text-base break-all">{user?.email}</p>
               </div>
             </div>
 
