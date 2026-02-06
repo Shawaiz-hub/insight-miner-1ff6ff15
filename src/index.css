@@ -427,4 +427,13 @@
       min-width: 44px;
     }
   }
+
+  /* Safe area for bottom navigation */
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0);
+  }
+
+  .pb-safe {
+    padding-bottom: calc(4rem + env(safe-area-inset-bottom, 0));
+  }
 }
