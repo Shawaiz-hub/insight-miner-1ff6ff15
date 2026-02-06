@@ -1,8 +1,11 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Navbar } from "@/components/layout/Navbar";
+import { OfflineIndicator } from "@/components/layout/OfflineIndicator";
 import { PageTransition } from "@/components/layout/PageTransition";
 import { usePullToRefresh } from "@/hooks/usePullToRefresh";
+import { useOfflineCache } from "@/hooks/useOfflineCache";
+import { useOnline } from "@/hooks/useOnline";
 import { PullToRefreshIndicator } from "@/components/ui/pull-to-refresh";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -41,6 +44,8 @@ const SavedRules = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const isMobile = useIsMobile();
+  const isOnline = useOnline();
+  const { cacheSavedRules, getCachedSavedRules } = useOfflineCache();
 
   const fetchSavedRules = useCallback(async () => {
     try {
@@ -57,14 +62,29 @@ const SavedRules = () => {
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      setRules(data || []);
+      
+      const rulesData = data || [];
+      setRules(rulesData);
+      
+      // Cache the data for offline access
+      await cacheSavedRules(rulesData);
     } catch (error) {
       console.error("Error fetching saved rules:", error);
-      toast.error("Failed to load saved rules");
+      
+      // If offline or error, try loading from cache
+      if (!isOnline) {
+        const cachedData = await getCachedSavedRules();
+        if (cachedData.length > 0) {
+          setRules(cachedData);
+          toast.info("Showing cached rules");
+        }
+      } else {
+        toast.error("Failed to load saved rules");
+      }
     } finally {
       setIsLoading(false);
     }
-  }, [navigate]);
+  }, [isOnline, navigate, cacheSavedRules, getCachedSavedRules]);
 
   useEffect(() => {
     fetchSavedRules();
@@ -132,6 +152,7 @@ const SavedRules = () => {
         <div className="fixed inset-0 bg-animated-gradient pointer-events-none" />
         <div className="fixed inset-0 bg-grid opacity-10 pointer-events-none" />
         
+        <OfflineIndicator />
         <Navbar />
         
         <div

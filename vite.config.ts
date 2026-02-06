@@ -51,6 +51,7 @@ export default defineConfig(({ mode }) => ({
       workbox: {
         globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
         runtimeCaching: [
+          // Cache Google Fonts
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
             handler: "CacheFirst",
@@ -59,6 +60,31 @@ export default defineConfig(({ mode }) => ({
               expiration: {
                 maxEntries: 10,
                 maxAgeSeconds: 60 * 60 * 24 * 365,
+              },
+            },
+          },
+          // Cache Supabase API responses with network-first strategy
+          {
+            urlPattern: /^https:\/\/.*\.supabase\.co\/rest\/v1\/.*/i,
+            handler: "NetworkFirst",
+            options: {
+              cacheName: "supabase-api-cache",
+              expiration: {
+                maxEntries: 50,
+                maxAgeSeconds: 60 * 60, // 1 hour
+              },
+              networkTimeoutSeconds: 3,
+            },
+          },
+          // Cache images with cache-first strategy
+          {
+            urlPattern: /\.(?:png|jpg|jpeg|svg|gif|webp)$/,
+            handler: "CacheFirst",
+            options: {
+              cacheName: "image-cache",
+              expiration: {
+                maxEntries: 60,
+                maxAgeSeconds: 60 * 60 * 24 * 7, // 7 days
               },
             },
           },
