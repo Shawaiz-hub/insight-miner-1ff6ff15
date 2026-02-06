@@ -1,10 +1,13 @@
 import { useEffect, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { Navbar } from "@/components/layout/Navbar";
+import { OfflineIndicator } from "@/components/layout/OfflineIndicator";
 import { Footer } from "@/components/layout/Footer";
 import { PageTransition } from "@/components/layout/PageTransition";
 import { useRequireAuth } from "@/hooks/useAuth";
 import { usePullToRefresh } from "@/hooks/usePullToRefresh";
+import { useOfflineCache } from "@/hooks/useOfflineCache";
+import { useOnline } from "@/hooks/useOnline";
 import { PullToRefreshIndicator } from "@/components/ui/pull-to-refresh";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
@@ -31,6 +34,8 @@ export default function History() {
   const [history, setHistory] = useState<MiningHistoryItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const isMobile = useIsMobile();
+  const isOnline = useOnline();
+  const { cacheHistory, getCachedHistory } = useOfflineCache();
 
   const fetchHistory = useCallback(async () => {
     try {
@@ -40,14 +45,29 @@ export default function History() {
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      setHistory(data || []);
+      
+      const historyData = data || [];
+      setHistory(historyData);
+      
+      // Cache the data for offline access
+      await cacheHistory(historyData);
     } catch (err) {
       console.error("Error fetching history:", err);
-      toast.error("Failed to load history");
+      
+      // If offline or error, try loading from cache
+      if (!isOnline) {
+        const cachedData = await getCachedHistory();
+        if (cachedData.length > 0) {
+          setHistory(cachedData);
+          toast.info("Showing cached history");
+        }
+      } else {
+        toast.error("Failed to load history");
+      }
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [isOnline, cacheHistory, getCachedHistory]);
 
   useEffect(() => {
     if (user) {
@@ -106,6 +126,7 @@ export default function History() {
   return (
     <PageTransition>
       <div className="min-h-screen bg-background">
+        <OfflineIndicator />
         <Navbar />
         <div
           ref={containerRef}
