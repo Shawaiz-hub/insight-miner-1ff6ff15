@@ -60,8 +60,15 @@ interface PreprocessOptions {
   maxItems?: number;
   excludeItems?: string[];
   minItemFrequency?: number;
+  maxItemFrequency?: number;
   removeNulls?: boolean;
   lowercase?: boolean;
+  // Advanced options
+  removeTimestamps?: boolean;
+  removeNumericItems?: boolean;
+  applySynonyms?: boolean;
+  minItemLength?: number;
+  missingValueStrategy?: 'remove' | 'replace';
 }
 
 interface DatasetInfo {
@@ -171,8 +178,14 @@ export function useMining() {
           max_items: options.maxItems,
           exclude_items: options.excludeItems,
           min_item_frequency: options.minItemFrequency,
+          max_item_frequency: options.maxItemFrequency,
           remove_nulls: options.removeNulls,
           lowercase: options.lowercase,
+          remove_timestamps: options.removeTimestamps,
+          remove_numeric_items: options.removeNumericItems,
+          apply_synonyms: options.applySynonyms,
+          min_item_length: options.minItemLength,
+          missing_value_strategy: options.missingValueStrategy,
         }),
       });
 
