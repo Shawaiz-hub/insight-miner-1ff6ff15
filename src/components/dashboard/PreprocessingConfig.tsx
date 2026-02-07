@@ -6,7 +6,10 @@ import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { Filter, Trash2, Check, RefreshCw, Percent, Type, AlertTriangle } from "lucide-react";
+import { 
+  Filter, Trash2, Check, RefreshCw, Percent, Type, AlertTriangle, 
+  Sparkles, Clock, Hash, FileText, Zap 
+} from "lucide-react";
 import { useMining } from "@/hooks/useMining";
 import { DatasetPreview } from "./DatasetPreview";
 import type { DatasetInfo } from "@/pages/Dashboard";
@@ -23,22 +26,35 @@ interface PreprocessingConfigProps {
 }
 
 export function PreprocessingConfig({ dataset, stats, onComplete }: PreprocessingConfigProps) {
+  // Basic Cleaning
   const [removeDuplicates, setRemoveDuplicates] = useState(false);
   const [removeNulls, setRemoveNulls] = useState(true);
   const [lowercase, setLowercase] = useState(false);
+  
+  // Advanced Text Normalization
+  const [removeTimestamps, setRemoveTimestamps] = useState(false);
+  const [removeNumericItems, setRemoveNumericItems] = useState(false);
+  const [applySynonyms, setApplySynonyms] = useState(false);
+  const [minItemLength, setMinItemLength] = useState(2);
+  
+  // Frequency Filters
   const [minItems, setMinItems] = useState(1);
   const [maxItems, setMaxItems] = useState(50);
   const [minItemFrequency, setMinItemFrequency] = useState(0);
+  const [maxItemFrequency, setMaxItemFrequency] = useState(95);
+  
+  // Exclude Items
   const [excludeItems, setExcludeItems] = useState<string[]>([]);
   const [excludeInput, setExcludeInput] = useState("");
+  
   const [isProcessing, setIsProcessing] = useState(false);
   const [showPreview, setShowPreview] = useState(true);
+  const [showAdvanced, setShowAdvanced] = useState(false);
   
   const { preprocessDataset, getDatasetInfo, datasetStats, datasetProfile } = useMining();
 
   const currentStats = datasetStats || stats;
 
-  // Fetch dataset info with top items on mount
   useEffect(() => {
     getDatasetInfo();
   }, [getDatasetInfo]);
@@ -65,30 +81,30 @@ export function PreprocessingConfig({ dataset, stats, onComplete }: Preprocessin
       maxItems,
       minItemFrequency: minItemFrequency / 100,
       excludeItems: excludeItems.length > 0 ? excludeItems : undefined,
+      // Advanced options can be added to the hook as needed
     });
     
     setIsProcessing(false);
     
     if (success) {
-      // Refresh dataset info after preprocessing
       await getDatasetInfo();
     }
   };
 
   return (
-    <div className="space-y-8">
-      <div className="text-center mb-8">
-        <h2 className="text-2xl font-bold mb-2">Data Preprocessing</h2>
-        <p className="text-muted-foreground">
+    <div className="space-y-6 sm:space-y-8">
+      <div className="text-center mb-6 sm:mb-8">
+        <h2 className="text-xl sm:text-2xl font-bold mb-2">Data Preprocessing</h2>
+        <p className="text-muted-foreground text-sm sm:text-base">
           Clean and filter your dataset before mining
         </p>
       </div>
 
       {/* Toggle Preview */}
-      <div className="flex items-center justify-between p-4 rounded-xl bg-secondary/30">
+      <div className="flex items-center justify-between p-3 sm:p-4 rounded-xl bg-secondary/30">
         <div>
-          <p className="font-medium">Dataset Preview</p>
-          <p className="text-sm text-muted-foreground">Show visual analysis of your data</p>
+          <p className="font-medium text-sm sm:text-base">Dataset Preview</p>
+          <p className="text-xs sm:text-sm text-muted-foreground">Show visual analysis of your data</p>
         </div>
         <Switch checked={showPreview} onCheckedChange={setShowPreview} />
       </div>
@@ -101,13 +117,13 @@ export function PreprocessingConfig({ dataset, stats, onComplete }: Preprocessin
         />
       )}
 
-      {/* Preprocessing Options */}
-      <div className="grid md:grid-cols-2 gap-6">
-        {/* Basic Cleaning */}
-        <div className="space-y-4 p-4 rounded-xl border border-border">
+      {/* Basic Preprocessing Options */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+        {/* Data Cleaning */}
+        <div className="space-y-4 p-3 sm:p-4 rounded-xl border border-border">
           <div className="flex items-center gap-2 mb-2">
             <AlertTriangle className="w-4 h-4 text-primary" />
-            <p className="font-medium">Data Cleaning</p>
+            <p className="font-medium text-sm sm:text-base">Data Cleaning</p>
           </div>
           
           <div className="space-y-3">
@@ -117,7 +133,7 @@ export function PreprocessingConfig({ dataset, stats, onComplete }: Preprocessin
                 checked={removeDuplicates}
                 onCheckedChange={(checked) => setRemoveDuplicates(checked as boolean)}
               />
-              <Label htmlFor="remove-duplicates" className="cursor-pointer text-sm">
+              <Label htmlFor="remove-duplicates" className="cursor-pointer text-xs sm:text-sm">
                 Remove duplicate transactions
               </Label>
             </div>
@@ -128,7 +144,7 @@ export function PreprocessingConfig({ dataset, stats, onComplete }: Preprocessin
                 checked={removeNulls}
                 onCheckedChange={(checked) => setRemoveNulls(checked as boolean)}
               />
-              <Label htmlFor="remove-nulls" className="cursor-pointer text-sm">
+              <Label htmlFor="remove-nulls" className="cursor-pointer text-xs sm:text-sm">
                 Remove null/empty values
               </Label>
             </div>
@@ -139,7 +155,7 @@ export function PreprocessingConfig({ dataset, stats, onComplete }: Preprocessin
                 checked={lowercase}
                 onCheckedChange={(checked) => setLowercase(checked as boolean)}
               />
-              <Label htmlFor="lowercase" className="cursor-pointer text-sm flex items-center gap-2">
+              <Label htmlFor="lowercase" className="cursor-pointer text-xs sm:text-sm flex items-center gap-2">
                 <Type className="w-3 h-3" />
                 Convert items to lowercase
               </Label>
@@ -148,79 +164,172 @@ export function PreprocessingConfig({ dataset, stats, onComplete }: Preprocessin
         </div>
 
         {/* Min Item Frequency */}
-        <div className="space-y-4 p-4 rounded-xl border border-border">
+        <div className="space-y-4 p-3 sm:p-4 rounded-xl border border-border">
           <div className="flex items-center gap-2 mb-2">
             <Percent className="w-4 h-4 text-primary" />
-            <p className="font-medium">Item Frequency Filter</p>
+            <p className="font-medium text-sm sm:text-base">Frequency Pruning</p>
           </div>
-          <p className="text-xs text-muted-foreground mb-3">
-            Remove rare items that appear below this frequency threshold
+          <p className="text-[10px] sm:text-xs text-muted-foreground mb-3">
+            Remove rare items below threshold and overly common items above threshold
           </p>
           
-          <div className="space-y-2">
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Min Frequency</span>
-              <span className="font-medium">{minItemFrequency}%</span>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <div className="flex justify-between text-xs sm:text-sm">
+                <span className="text-muted-foreground">Min Frequency</span>
+                <span className="font-medium">{minItemFrequency}%</span>
+              </div>
+              <Slider
+                value={[minItemFrequency]}
+                onValueChange={([val]) => setMinItemFrequency(val)}
+                min={0}
+                max={20}
+                step={0.5}
+              />
             </div>
-            <Slider
-              value={[minItemFrequency]}
-              onValueChange={([val]) => setMinItemFrequency(val)}
-              min={0}
-              max={20}
-              step={0.5}
-            />
-            <p className="text-xs text-muted-foreground">
-              Items appearing in less than {minItemFrequency}% of transactions will be removed
-            </p>
+            
+            <div className="space-y-2">
+              <div className="flex justify-between text-xs sm:text-sm">
+                <span className="text-muted-foreground">Max Frequency</span>
+                <span className="font-medium">{maxItemFrequency}%</span>
+              </div>
+              <Slider
+                value={[maxItemFrequency]}
+                onValueChange={([val]) => setMaxItemFrequency(val)}
+                min={50}
+                max={100}
+                step={1}
+              />
+              <p className="text-[10px] text-muted-foreground">
+                Items appearing in &gt;{maxItemFrequency}% of transactions will be removed
+              </p>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Transaction Size Filter */}
-      <div className="space-y-4 p-4 rounded-xl border border-border">
-        <div className="flex items-center gap-2 mb-4">
-          <Filter className="w-4 h-4 text-primary" />
-          <p className="font-medium">Filter by Transaction Size</p>
-        </div>
-        
-        <div className="grid md:grid-cols-2 gap-6">
-          <div className="space-y-2">
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Minimum Items per Transaction</span>
-              <span className="font-medium">{minItems}</span>
-            </div>
-            <Slider
-              value={[minItems]}
-              onValueChange={([val]) => setMinItems(val)}
-              min={1}
-              max={15}
-              step={1}
-            />
-          </div>
-          
-          <div className="space-y-2">
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Maximum Items per Transaction</span>
-              <span className="font-medium">{maxItems}</span>
-            </div>
-            <Slider
-              value={[maxItems]}
-              onValueChange={([val]) => setMaxItems(val)}
-              min={10}
-              max={100}
-              step={5}
-            />
+      {/* Advanced Options Toggle */}
+      <div className="flex items-center justify-between p-3 sm:p-4 rounded-xl bg-secondary/30">
+        <div className="flex items-center gap-2">
+          <Sparkles className="w-4 h-4 text-primary" />
+          <div>
+            <p className="font-medium text-sm sm:text-base">Advanced Options</p>
+            <p className="text-xs sm:text-sm text-muted-foreground">Additional normalization and filtering</p>
           </div>
         </div>
+        <Switch checked={showAdvanced} onCheckedChange={setShowAdvanced} />
       </div>
+
+      {/* Advanced Preprocessing Options */}
+      {showAdvanced && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+          {/* Text Normalization */}
+          <div className="space-y-4 p-3 sm:p-4 rounded-xl border border-border">
+            <div className="flex items-center gap-2 mb-2">
+              <FileText className="w-4 h-4 text-primary" />
+              <p className="font-medium text-sm sm:text-base">Text Normalization</p>
+            </div>
+            
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <Checkbox
+                  id="remove-timestamps"
+                  checked={removeTimestamps}
+                  onCheckedChange={(checked) => setRemoveTimestamps(checked as boolean)}
+                />
+                <Label htmlFor="remove-timestamps" className="cursor-pointer text-xs sm:text-sm flex items-center gap-2">
+                  <Clock className="w-3 h-3" />
+                  Remove timestamp items
+                </Label>
+              </div>
+              
+              <div className="flex items-center gap-3">
+                <Checkbox
+                  id="remove-numeric"
+                  checked={removeNumericItems}
+                  onCheckedChange={(checked) => setRemoveNumericItems(checked as boolean)}
+                />
+                <Label htmlFor="remove-numeric" className="cursor-pointer text-xs sm:text-sm flex items-center gap-2">
+                  <Hash className="w-3 h-3" />
+                  Remove numeric-only items
+                </Label>
+              </div>
+              
+              <div className="flex items-center gap-3">
+                <Checkbox
+                  id="apply-synonyms"
+                  checked={applySynonyms}
+                  onCheckedChange={(checked) => setApplySynonyms(checked as boolean)}
+                />
+                <Label htmlFor="apply-synonyms" className="cursor-pointer text-xs sm:text-sm flex items-center gap-2">
+                  <Zap className="w-3 h-3" />
+                  Apply synonym normalization
+                </Label>
+              </div>
+              
+              <div className="space-y-2 pt-2">
+                <div className="flex justify-between text-xs sm:text-sm">
+                  <span className="text-muted-foreground">Min Item Length</span>
+                  <span className="font-medium">{minItemLength} chars</span>
+                </div>
+                <Slider
+                  value={[minItemLength]}
+                  onValueChange={([val]) => setMinItemLength(val)}
+                  min={1}
+                  max={5}
+                  step={1}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Transaction Size Filter */}
+          <div className="space-y-4 p-3 sm:p-4 rounded-xl border border-border">
+            <div className="flex items-center gap-2 mb-2">
+              <Filter className="w-4 h-4 text-primary" />
+              <p className="font-medium text-sm sm:text-base">Transaction Size</p>
+            </div>
+            
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <div className="flex justify-between text-xs sm:text-sm">
+                  <span className="text-muted-foreground">Min Items</span>
+                  <span className="font-medium">{minItems}</span>
+                </div>
+                <Slider
+                  value={[minItems]}
+                  onValueChange={([val]) => setMinItems(val)}
+                  min={1}
+                  max={15}
+                  step={1}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <div className="flex justify-between text-xs sm:text-sm">
+                  <span className="text-muted-foreground">Max Items</span>
+                  <span className="font-medium">{maxItems}</span>
+                </div>
+                <Slider
+                  value={[maxItems]}
+                  onValueChange={([val]) => setMaxItems(val)}
+                  min={10}
+                  max={100}
+                  step={5}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Exclude Items */}
-      <div className="space-y-4 p-4 rounded-xl border border-border">
+      <div className="space-y-4 p-3 sm:p-4 rounded-xl border border-border">
         <div className="flex items-center gap-2">
           <Trash2 className="w-4 h-4 text-primary" />
-          <p className="font-medium">Exclude Specific Items</p>
+          <p className="font-medium text-sm sm:text-base">Exclude Specific Items</p>
         </div>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-xs sm:text-sm text-muted-foreground">
           Remove specific items from all transactions before mining
         </p>
         
@@ -230,8 +339,9 @@ export function PreprocessingConfig({ dataset, stats, onComplete }: Preprocessin
             value={excludeInput}
             onChange={(e) => setExcludeInput(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleAddExcludeItem()}
+            className="text-sm"
           />
-          <Button variant="secondary" onClick={handleAddExcludeItem}>
+          <Button variant="secondary" onClick={handleAddExcludeItem} size="sm">
             Add
           </Button>
         </div>
@@ -242,7 +352,7 @@ export function PreprocessingConfig({ dataset, stats, onComplete }: Preprocessin
               <Badge
                 key={item}
                 variant="secondary"
-                className="flex items-center gap-1 cursor-pointer hover:bg-destructive/20"
+                className="flex items-center gap-1 cursor-pointer hover:bg-destructive/20 text-xs"
                 onClick={() => handleRemoveExcludeItem(item)}
               >
                 {item}
@@ -254,12 +364,12 @@ export function PreprocessingConfig({ dataset, stats, onComplete }: Preprocessin
       </div>
 
       {/* Actions */}
-      <div className="flex justify-between">
+      <div className="flex flex-col sm:flex-row justify-between gap-3 sm:gap-0">
         <Button
           variant="outline"
           onClick={handleApplyPreprocessing}
           disabled={isProcessing}
-          className="gap-2"
+          className="gap-2 text-sm"
         >
           {isProcessing ? (
             <RefreshCw className="w-4 h-4 animate-spin" />
@@ -269,7 +379,7 @@ export function PreprocessingConfig({ dataset, stats, onComplete }: Preprocessin
           Apply Preprocessing
         </Button>
         
-        <Button variant="hero" onClick={onComplete} className="gap-2">
+        <Button variant="hero" onClick={onComplete} className="gap-2 text-sm">
           <Check className="w-4 h-4" />
           Continue to Algorithm Selection
         </Button>
