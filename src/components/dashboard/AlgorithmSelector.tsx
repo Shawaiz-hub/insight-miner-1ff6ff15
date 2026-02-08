@@ -1,5 +1,12 @@
-import { Layers, Network, Binary, Cpu, Workflow, Lock, Maximize, Check, GitBranch, Fingerprint, Waves, Sparkles, Database } from "lucide-react";
+import { Layers, Network, Binary, Cpu, Workflow, Lock, Maximize, Check, GitBranch, Waves, Database, Info } from "lucide-react";
+import { AlgorithmInfoIcon } from "./AlgorithmTooltip";
 import type { DatasetInfo } from "@/pages/Dashboard";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface AlgorithmSelectorProps {
   selected: string;
@@ -104,6 +111,16 @@ const algorithms = [
     family: "Closed",
   },
   {
+    id: "closet",
+    name: "CLOSET",
+    icon: Lock,
+    description: "FP-tree based closed pattern mining for efficient compression.",
+    complexity: "O(n log n)",
+    bestFor: "Compact representation",
+    type: "Closed",
+    family: "Closed",
+  },
+  {
     id: "maxminer",
     name: "MaxMiner",
     icon: Maximize,
@@ -137,6 +154,17 @@ const familyColors: Record<string, string> = {
   Extended: "from-pink-500/20 to-pink-500/5",
 };
 
+const familyDescriptions: Record<string, string> = {
+  Classical: "Level-wise candidate generation algorithms",
+  "FP-Tree": "Pattern-growth using tree structures",
+  Vertical: "TID-list intersection based",
+  Projected: "Database projection techniques",
+  Stream: "Streaming/incremental data",
+  Closed: "Lossless pattern compression",
+  Maximal: "Minimal output representation",
+  Extended: "Specialized mining extensions",
+};
+
 export function AlgorithmSelector({ selected, onSelect, dataset }: AlgorithmSelectorProps) {
   return (
     <div className="space-y-6">
@@ -152,17 +180,25 @@ export function AlgorithmSelector({ selected, onSelect, dataset }: AlgorithmSele
         )}
       </div>
 
-      {/* Algorithm Families */}
-      <div className="flex flex-wrap gap-2 justify-center mb-4">
-        {Object.keys(familyColors).map((family) => (
-          <span
-            key={family}
-            className="text-xs px-2 py-1 rounded-full bg-secondary/50 text-muted-foreground"
-          >
-            {family}
-          </span>
-        ))}
-      </div>
+      {/* Algorithm Families with Tooltips */}
+      <TooltipProvider>
+        <div className="flex flex-wrap gap-2 justify-center mb-4">
+          {Object.entries(familyColors).map(([family]) => (
+            <Tooltip key={family}>
+              <TooltipTrigger asChild>
+                <span
+                  className="text-xs px-2 py-1 rounded-full bg-secondary/50 text-muted-foreground cursor-help hover:bg-secondary transition-colors"
+                >
+                  {family}
+                </span>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p className="text-xs">{familyDescriptions[family]}</p>
+              </TooltipContent>
+            </Tooltip>
+          ))}
+        </div>
+      </TooltipProvider>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
         {algorithms.map((algo) => (
@@ -175,11 +211,17 @@ export function AlgorithmSelector({ selected, onSelect, dataset }: AlgorithmSele
                 : "border-border hover:border-primary/50"
             }`}
           >
+            {/* Selection indicator */}
             {selected === algo.id && (
               <div className="absolute top-2 right-2 sm:top-3 sm:right-3 w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-primary flex items-center justify-center">
                 <Check className="w-3 h-3 sm:w-4 sm:h-4 text-primary-foreground" />
               </div>
             )}
+            
+            {/* Info tooltip icon */}
+            <div className="absolute top-2 right-10 sm:top-3 sm:right-12">
+              <AlgorithmInfoIcon algorithm={algo} />
+            </div>
             
             <div 
               className={`feature-icon w-8 h-8 sm:w-10 sm:h-10 mb-2 sm:mb-3 bg-gradient-to-br ${familyColors[algo.family] || 'from-gray-500/20 to-gray-500/5'}`}
