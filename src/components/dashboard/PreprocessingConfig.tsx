@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { useMining } from "@/hooks/useMining";
 import { DatasetPreview } from "./DatasetPreview";
+import { PreprocessingComparison } from "./PreprocessingComparison";
 import type { DatasetInfo } from "@/pages/Dashboard";
 
 interface PreprocessingConfigProps {
@@ -36,6 +37,7 @@ export function PreprocessingConfig({ dataset, stats, onComplete }: Preprocessin
   const [removeNumericItems, setRemoveNumericItems] = useState(false);
   const [applySynonyms, setApplySynonyms] = useState(false);
   const [minItemLength, setMinItemLength] = useState(2);
+  const [missingValueStrategy, setMissingValueStrategy] = useState<'remove' | 'replace'>('remove');
   
   // Frequency Filters
   const [minItems, setMinItems] = useState(1);
@@ -50,6 +52,8 @@ export function PreprocessingConfig({ dataset, stats, onComplete }: Preprocessin
   const [isProcessing, setIsProcessing] = useState(false);
   const [showPreview, setShowPreview] = useState(true);
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [showComparison, setShowComparison] = useState(false);
+  const [beforeStats, setBeforeStats] = useState<typeof stats>(null);
   
   const { preprocessDataset, getDatasetInfo, datasetStats, datasetProfile } = useMining();
 
@@ -71,6 +75,8 @@ export function PreprocessingConfig({ dataset, stats, onComplete }: Preprocessin
   };
 
   const handleApplyPreprocessing = async () => {
+    // Store before stats for comparison
+    setBeforeStats(currentStats);
     setIsProcessing(true);
     
     const success = await preprocessDataset({
@@ -80,14 +86,21 @@ export function PreprocessingConfig({ dataset, stats, onComplete }: Preprocessin
       minItems,
       maxItems,
       minItemFrequency: minItemFrequency / 100,
+      maxItemFrequency: maxItemFrequency / 100,
       excludeItems: excludeItems.length > 0 ? excludeItems : undefined,
-      // Advanced options can be added to the hook as needed
+      // Advanced options
+      removeTimestamps,
+      removeNumericItems,
+      applySynonyms,
+      minItemLength,
+      missingValueStrategy,
     });
     
     setIsProcessing(false);
     
     if (success) {
       await getDatasetInfo();
+      setShowComparison(true);
     }
   };
 
@@ -362,6 +375,13 @@ export function PreprocessingConfig({ dataset, stats, onComplete }: Preprocessin
           </div>
         )}
       </div>
+
+      {/* Preprocessing Comparison */}
+      <PreprocessingComparison
+        beforeStats={beforeStats}
+        afterStats={currentStats}
+        isVisible={showComparison}
+      />
 
       {/* Actions */}
       <div className="flex flex-col sm:flex-row justify-between gap-3 sm:gap-0">
