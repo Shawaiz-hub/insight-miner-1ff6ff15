@@ -18,8 +18,12 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Loader2, Clock, Database, Trash2, ArrowRight, History as HistoryIcon,
-  Play, Filter, CalendarIcon, ArrowUpDown, X, Download,
+  Play, Filter, CalendarIcon, ArrowUpDown, X, Download, ChevronLeft, ChevronRight,
 } from "lucide-react";
 import { RecommendationComparison } from "@/components/dashboard/RecommendationComparison";
 import { format, isAfter, isBefore, startOfDay, endOfDay } from "date-fns";
@@ -59,6 +63,9 @@ export default function History() {
   const [sortDir, setSortDir] = useState<SortDir>("desc");
   const [showFilters, setShowFilters] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const PAGE_SIZE = 10;
 
   const toggleSelect = (id: string) => {
     setSelectedIds(prev => {
@@ -190,6 +197,15 @@ export default function History() {
 
     return result;
   }, [history, filterTask, filterAlgorithm, dateFrom, dateTo, sortField, sortDir]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredHistory.length / PAGE_SIZE));
+  const paginatedHistory = useMemo(() => {
+    const start = (currentPage - 1) * PAGE_SIZE;
+    return filteredHistory.slice(start, start + PAGE_SIZE);
+  }, [filteredHistory, currentPage]);
+
+  // Reset page when filters change
+  useEffect(() => { setCurrentPage(1); }, [filterTask, filterAlgorithm, dateFrom, dateTo]);
 
   const hasActiveFilters = filterTask !== "all" || filterAlgorithm !== "all" || dateFrom || dateTo;
 
@@ -455,13 +471,13 @@ export default function History() {
                         {selectedIds.size > 0 ? `${selectedIds.size} selected` : "Select all"}
                       </span>
                       {selectedIds.size > 0 && (
-                        <Button variant="destructive" size="sm" onClick={bulkDelete} className="gap-1.5 text-xs h-7 ml-auto">
+                        <Button variant="destructive" size="sm" onClick={() => setShowDeleteConfirm(true)} className="gap-1.5 text-xs h-7 ml-auto">
                           <Trash2 className="w-3.5 h-3.5" />
                           Delete {selectedIds.size}
                         </Button>
                       )}
                     </div>
-                    {filteredHistory.map((item) => (
+                    {paginatedHistory.map((item) => (
                       <Card key={item.id} className={cn("bg-secondary/30 border-border hover:bg-secondary/50 transition-colors", selectedIds.has(item.id) && "ring-1 ring-primary/50")}>
                         <CardContent className="py-3 sm:py-4 px-3 sm:px-6">
                           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -525,6 +541,33 @@ export default function History() {
                         </CardContent>
                       </Card>
                     ))}
+
+                    {/* Pagination */}
+                    {totalPages > 1 && (
+                      <div className="flex items-center justify-center gap-2 pt-4">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          disabled={currentPage === 1}
+                          onClick={() => setCurrentPage(p => p - 1)}
+                          className="h-8 w-8 p-0"
+                        >
+                          <ChevronLeft className="w-4 h-4" />
+                        </Button>
+                        <span className="text-sm text-muted-foreground">
+                          Page {currentPage} of {totalPages}
+                        </span>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          disabled={currentPage === totalPages}
+                          onClick={() => setCurrentPage(p => p + 1)}
+                          className="h-8 w-8 p-0"
+                        >
+                          <ChevronRight className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 )}
               </>
@@ -533,6 +576,23 @@ export default function History() {
           <Footer />
         </div>
       </div>
+      {/* Bulk delete confirmation dialog */}
+      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete {selectedIds.size} entries?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently remove the selected mining history entries. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={bulkDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </PageTransition>
   );
 }
