@@ -144,11 +144,17 @@ const Dashboard = () => {
         const { supabase } = await import("@/integrations/supabase/client");
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
-          const insertData = { ...historyEntry, user_id: user.id };
-          await supabase.from("mining_history").insert([insertData]);
+          await supabase.from("mining_history").insert([{
+            algorithm: selectedAlgorithm,
+            task_type: miningTask,
+            dataset_name: dataset.name,
+            parameters: JSON.parse(JSON.stringify(params)),
+            results_summary: JSON.parse(JSON.stringify(historyEntry.results_summary)),
+            execution_time_ms: historyEntry.execution_time_ms,
+            user_id: user.id,
+          }]);
         }
       } catch {
-        // Queue for offline sync
         await queueOfflineMutation("mining_history", "insert", historyEntry);
       }
     }
