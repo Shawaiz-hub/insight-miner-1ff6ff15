@@ -198,6 +198,15 @@ export default function History() {
     return result;
   }, [history, filterTask, filterAlgorithm, dateFrom, dateTo, sortField, sortDir]);
 
+  const totalPages = Math.max(1, Math.ceil(filteredHistory.length / PAGE_SIZE));
+  const paginatedHistory = useMemo(() => {
+    const start = (currentPage - 1) * PAGE_SIZE;
+    return filteredHistory.slice(start, start + PAGE_SIZE);
+  }, [filteredHistory, currentPage]);
+
+  // Reset page when filters change
+  useEffect(() => { setCurrentPage(1); }, [filterTask, filterAlgorithm, dateFrom, dateTo]);
+
   const hasActiveFilters = filterTask !== "all" || filterAlgorithm !== "all" || dateFrom || dateTo;
 
   const clearFilters = () => {
