@@ -18,7 +18,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Loader2, Clock, Database, Trash2, ArrowRight, History as HistoryIcon,
-  Play, Filter, CalendarIcon, ArrowUpDown, X,
+  Play, Filter, CalendarIcon, ArrowUpDown, X, Download,
 } from "lucide-react";
 import { RecommendationComparison } from "@/components/dashboard/RecommendationComparison";
 import { format, isAfter, isBefore, startOfDay, endOfDay } from "date-fns";
