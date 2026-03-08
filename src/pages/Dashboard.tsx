@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Navbar } from "@/components/layout/Navbar";
 import { useOfflineCache } from "@/hooks/useOfflineCache";
 import { DataUpload } from "@/components/dashboard/DataUpload";
@@ -54,6 +55,7 @@ export interface FrequentItemset {
 }
 
 const Dashboard = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [step, setStep] = useState<MiningStep>("upload");
   const [miningTask, setMiningTask] = useState<MiningTask>("association");
   const [dataset, setDataset] = useState<DatasetInfo | null>(null);
@@ -70,8 +72,35 @@ const Dashboard = () => {
   const [clusteringResults, setClusteringResults] = useState<ClusteringResultsType | null>(null);
   const [transactionCount, setTransactionCount] = useState(0);
   const [backendConnected, setBackendConnected] = useState<boolean | null>(null);
+  const [rerunDatasetName, setRerunDatasetName] = useState<string | null>(null);
   
   const { runMining, checkHealth, getRecommendation, isRunning, error, progress, datasetStats, datasetProfile, recommendation } = useMining();
+
+  // Handle re-run params from URL
+  useEffect(() => {
+    if (searchParams.get("rerun") === "true") {
+      const task = searchParams.get("task") as MiningTask;
+      const algorithm = searchParams.get("algorithm");
+      const datasetName = searchParams.get("dataset");
+      
+      if (task) setMiningTask(task);
+      if (algorithm) setSelectedAlgorithm(algorithm);
+      if (datasetName) setRerunDatasetName(datasetName);
+      
+      const newParams: Partial<MiningParams> = {};
+      if (searchParams.get("minSupport")) newParams.minSupport = parseFloat(searchParams.get("minSupport")!);
+      if (searchParams.get("minConfidence")) newParams.minConfidence = parseFloat(searchParams.get("minConfidence")!);
+      if (searchParams.get("maxRuleLength")) newParams.maxRuleLength = parseInt(searchParams.get("maxRuleLength")!);
+      if (searchParams.get("liftThreshold")) newParams.liftThreshold = parseFloat(searchParams.get("liftThreshold")!);
+      
+      if (Object.keys(newParams).length > 0) {
+        setParams(prev => ({ ...prev, ...newParams }));
+      }
+      
+      // Clear URL params after reading
+      setSearchParams({}, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
 
   const checkConnection = useCallback(async () => {
     const connected = await checkHealth();
@@ -251,8 +280,20 @@ const Dashboard = () => {
           {error && <div className="mb-6 p-4 rounded-xl bg-destructive/10 border border-destructive/30 flex items-center gap-3"><AlertCircle className="w-5 h-5 text-destructive" /><p className="text-sm text-destructive">{error}</p></div>}
 
           <div className="glass-card-elevated rounded-xl sm:rounded-2xl p-4 sm:p-6 md:p-8 animate-fade-in-scale" style={{ animationDelay: "0.2s" }}>
-            {step === "upload" && <DataUpload onUpload={handleDatasetUpload} />}
-            
+            {step === "upload" && (
+              <>
+                {rerunDatasetName && (
+                  <div className="mb-4 p-3 rounded-lg bg-primary/10 border border-primary/20 flex items-center gap-3">
+                    <Play className="w-4 h-4 text-primary" />
+                    <p className="text-sm">
+                      Re-running <span className="font-semibold">{selectedAlgorithm.toUpperCase()}</span> session.
+                      Upload <span className="font-medium">{rerunDatasetName}</span> to continue with the same parameters.
+                    </p>
+                  </div>
+                )}
+                <DataUpload onUpload={handleDatasetUpload} />
+              </>
+            )}
             {step === "preprocess" && dataset && <PreprocessingConfig dataset={dataset} stats={datasetStats} onComplete={handlePreprocessingComplete} />}
             
             {step === "task" && (
