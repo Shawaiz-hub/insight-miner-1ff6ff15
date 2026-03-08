@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { Navbar } from "@/components/layout/Navbar";
+import { useOfflineCache } from "@/hooks/useOfflineCache";
 import { DataUpload } from "@/components/dashboard/DataUpload";
 import { AlgorithmSelector } from "@/components/dashboard/AlgorithmSelector";
 import { ParameterConfig } from "@/components/dashboard/ParameterConfig";
