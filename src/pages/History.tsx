@@ -390,7 +390,7 @@ export default function History() {
                     {/* Date Quick Filters */}
                     <div className="sm:col-span-2">
                       <p className="text-xs text-muted-foreground mb-1.5">Date Range</p>
-                      <div className="flex gap-1.5 flex-wrap mb-2">
+                      <div className="flex gap-1 sm:gap-1.5 flex-wrap">{/* horizontal scroll on mobile */}
                         {[
                           { label: "Today", from: startOfToday(), to: new Date() },
                           { label: "7 days", from: subDays(new Date(), 7), to: new Date() },
