@@ -176,14 +176,23 @@ const familyDescriptions: Record<string, string> = {
 export function AlgorithmSelector({ selected, onSelect, dataset, recommendation, datasetProfile, onFetchRecommendation }: AlgorithmSelectorProps) {
   const [isLoadingRec, setIsLoadingRec] = useState(false);
   const [autoApplied, setAutoApplied] = useState(false);
+  const [recMinSupport, setRecMinSupport] = useState(0.1);
 
   // Auto-fetch recommendation when component mounts with a dataset
   useEffect(() => {
     if (dataset && !recommendation && onFetchRecommendation && !isLoadingRec) {
       setIsLoadingRec(true);
-      onFetchRecommendation(0.1).finally(() => setIsLoadingRec(false));
+      onFetchRecommendation(recMinSupport).finally(() => setIsLoadingRec(false));
     }
-  }, [dataset, recommendation, onFetchRecommendation, isLoadingRec]);
+  }, [dataset, recommendation, onFetchRecommendation, isLoadingRec, recMinSupport]);
+
+  const handleReRunRecommendation = async () => {
+    if (!onFetchRecommendation || isLoadingRec) return;
+    setIsLoadingRec(true);
+    setAutoApplied(false);
+    await onFetchRecommendation(recMinSupport);
+    setIsLoadingRec(false);
+  };
 
   // Auto-select recommended algorithm once
   useEffect(() => {
