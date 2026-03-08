@@ -328,8 +328,8 @@ export default function History() {
 
             {/* Filters Panel */}
             {showFilters && (
-              <Card className="mb-6 bg-secondary/30 border-border animate-fade-in">
-                <CardContent className="p-4">
+              <Card className="mb-4 sm:mb-6 bg-secondary/30 border-border animate-fade-in">
+                <CardContent className="p-3 sm:p-4">
                   <div className="flex items-center justify-between mb-3">
                     <p className="text-sm font-medium flex items-center gap-2">
                       <Filter className="w-4 h-4 text-primary" /> Filter & Sort
