@@ -234,7 +234,7 @@ export default function History() {
                   {isMobile && <span className="text-xs block mt-1">Pull down to refresh</span>}
                 </p>
               </div>
-              <div className="flex gap-2 w-full sm:w-auto">
+              <div className="flex gap-2 w-full sm:w-auto flex-wrap">
                 <Button
                   variant={showFilters ? "default" : "outline"}
                   size="sm"
@@ -249,6 +249,18 @@ export default function History() {
                     </span>
                   )}
                 </Button>
+                {history.length > 0 && (
+                  <>
+                    <Button variant="outline" size="sm" onClick={handleExportCSV} className="gap-1.5 flex-1 sm:flex-none">
+                      <Download className="w-4 h-4" />
+                      <span className="hidden sm:inline">CSV</span>
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={handleExportJSON} className="gap-1.5 flex-1 sm:flex-none">
+                      <Download className="w-4 h-4" />
+                      <span className="hidden sm:inline">JSON</span>
+                    </Button>
+                  </>
+                )}
                 <Button asChild size="sm" className="flex-1 sm:flex-none">
                   <Link to="/dashboard">
                     New Session <ArrowRight className="ml-1 w-4 h-4" />
