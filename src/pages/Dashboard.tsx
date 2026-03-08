@@ -280,8 +280,20 @@ const Dashboard = () => {
           {error && <div className="mb-6 p-4 rounded-xl bg-destructive/10 border border-destructive/30 flex items-center gap-3"><AlertCircle className="w-5 h-5 text-destructive" /><p className="text-sm text-destructive">{error}</p></div>}
 
           <div className="glass-card-elevated rounded-xl sm:rounded-2xl p-4 sm:p-6 md:p-8 animate-fade-in-scale" style={{ animationDelay: "0.2s" }}>
-            {step === "upload" && <DataUpload onUpload={handleDatasetUpload} />}
-            
+            {step === "upload" && (
+              <>
+                {rerunDatasetName && (
+                  <div className="mb-4 p-3 rounded-lg bg-primary/10 border border-primary/20 flex items-center gap-3">
+                    <Play className="w-4 h-4 text-primary" />
+                    <p className="text-sm">
+                      Re-running <span className="font-semibold">{selectedAlgorithm.toUpperCase()}</span> session.
+                      Upload <span className="font-medium">{rerunDatasetName}</span> to continue with the same parameters.
+                    </p>
+                  </div>
+                )}
+                <DataUpload onUpload={handleDatasetUpload} />
+              </>
+            )}
             {step === "preprocess" && dataset && <PreprocessingConfig dataset={dataset} stats={datasetStats} onComplete={handlePreprocessingComplete} />}
             
             {step === "task" && (
