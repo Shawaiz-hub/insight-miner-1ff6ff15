@@ -210,7 +210,7 @@ export default function History() {
   // Reset page when filters or page size change
   useEffect(() => { setCurrentPage(1); }, [filterTask, filterAlgorithm, dateFrom, dateTo, searchDataset, pageSize]);
 
-  const hasActiveFilters = filterTask !== "all" || filterAlgorithm !== "all" || dateFrom || dateTo;
+  const hasActiveFilters = filterTask !== "all" || filterAlgorithm !== "all" || dateFrom || dateTo || searchDataset.trim() !== "";
 
   const clearFilters = () => {
     setFilterTask("all");
