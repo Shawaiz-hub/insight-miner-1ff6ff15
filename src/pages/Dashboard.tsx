@@ -70,7 +70,7 @@ const Dashboard = () => {
   const [transactionCount, setTransactionCount] = useState(0);
   const [backendConnected, setBackendConnected] = useState<boolean | null>(null);
   
-  const { runMining, checkHealth, isRunning, error, progress, datasetStats } = useMining();
+  const { runMining, checkHealth, getRecommendation, isRunning, error, progress, datasetStats, datasetProfile, recommendation } = useMining();
 
   const checkConnection = useCallback(async () => {
     const connected = await checkHealth();
@@ -300,7 +300,14 @@ const Dashboard = () => {
             )}
             
             {step === "algorithm" && miningTask === "association" && (
-              <AlgorithmSelector selected={selectedAlgorithm} onSelect={handleAlgorithmSelect} dataset={dataset} />
+              <AlgorithmSelector 
+                selected={selectedAlgorithm} 
+                onSelect={handleAlgorithmSelect} 
+                dataset={dataset}
+                recommendation={recommendation}
+                datasetProfile={datasetProfile}
+                onFetchRecommendation={getRecommendation}
+              />
             )}
             
             {step === "algorithm" && miningTask === "classification" && (
