@@ -420,6 +420,7 @@ export default function History() {
                           All time
                         </Button>
                       </div>
+                      </div>
                       <div className="grid grid-cols-2 gap-1.5">
                         <Popover>
                           <PopoverTrigger asChild>
