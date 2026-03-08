@@ -420,8 +420,7 @@ export default function History() {
                           All time
                         </Button>
                       </div>
-                      </div>
-                      <div className="grid grid-cols-2 gap-1.5">
+                      <div className="grid grid-cols-2 gap-1.5 mt-2">
                         <Popover>
                           <PopoverTrigger asChild>
                             <Button variant="outline" className={cn("w-full h-9 justify-start text-xs font-normal", !dateFrom && "text-muted-foreground")}>
