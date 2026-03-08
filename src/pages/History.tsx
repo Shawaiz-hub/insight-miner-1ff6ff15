@@ -199,7 +199,7 @@ export default function History() {
     });
 
     return result;
-  }, [history, filterTask, filterAlgorithm, dateFrom, dateTo, sortField, sortDir]);
+  }, [history, filterTask, filterAlgorithm, dateFrom, dateTo, sortField, sortDir, searchDataset]);
 
   const totalPages = Math.max(1, Math.ceil(filteredHistory.length / PAGE_SIZE));
   const paginatedHistory = useMemo(() => {
