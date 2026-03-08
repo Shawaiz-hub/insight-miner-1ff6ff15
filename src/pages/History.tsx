@@ -340,7 +340,21 @@ export default function History() {
                       </Button>
                     )}
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
+                    {/* Dataset Search */}
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-1.5">Dataset Name</p>
+                      <div className="relative">
+                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+                        <Input
+                          placeholder="Search datasets..."
+                          value={searchDataset}
+                          onChange={e => setSearchDataset(e.target.value)}
+                          className="h-9 text-xs pl-8"
+                        />
+                      </div>
+                    </div>
+
                     {/* Task Type */}
                     <div>
                       <p className="text-xs text-muted-foreground mb-1.5">Task Type</p>
