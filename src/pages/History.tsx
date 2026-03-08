@@ -179,6 +179,8 @@ export default function History() {
                 </CardContent>
               </Card>
             ) : (
+              <>
+              <RecommendationComparison history={history} />
               <div className="space-y-4">
                 {history.map((item) => (
                   <Card key={item.id} className="bg-secondary/30 border-border hover:bg-secondary/50 transition-colors">
