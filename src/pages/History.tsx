@@ -387,36 +387,53 @@ export default function History() {
                       </Select>
                     </div>
 
-                    {/* Date From */}
-                    <div>
-                      <p className="text-xs text-muted-foreground mb-1.5">From Date</p>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button variant="outline" className={cn("w-full h-9 justify-start text-xs font-normal", !dateFrom && "text-muted-foreground")}>
-                            <CalendarIcon className="w-3.5 h-3.5 mr-1.5" />
-                            {dateFrom ? format(dateFrom, "MMM d, yyyy") : "Start date"}
+                    {/* Date Quick Filters */}
+                    <div className="sm:col-span-2">
+                      <p className="text-xs text-muted-foreground mb-1.5">Date Range</p>
+                      <div className="flex gap-1.5 flex-wrap mb-2">
+                        {[
+                          { label: "Today", from: startOfToday(), to: new Date() },
+                          { label: "Last 7 days", from: subDays(new Date(), 7), to: new Date() },
+                          { label: "Last 30 days", from: subDays(new Date(), 30), to: new Date() },
+                        ].map(preset => (
+                          <Button
+                            key={preset.label}
+                            variant={dateFrom?.getTime() === startOfDay(preset.from).getTime() ? "default" : "outline"}
+                            size="sm"
+                            className="h-7 text-xs"
+                            onClick={() => {
+                              setDateFrom(startOfDay(preset.from));
+                              setDateTo(endOfDay(preset.to));
+                            }}
+                          >
+                            {preset.label}
                           </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
-                          <Calendar mode="single" selected={dateFrom} onSelect={setDateFrom} initialFocus className={cn("p-3 pointer-events-auto")} />
-                        </PopoverContent>
-                      </Popover>
-                    </div>
-
-                    {/* Date To */}
-                    <div>
-                      <p className="text-xs text-muted-foreground mb-1.5">To Date</p>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button variant="outline" className={cn("w-full h-9 justify-start text-xs font-normal", !dateTo && "text-muted-foreground")}>
-                            <CalendarIcon className="w-3.5 h-3.5 mr-1.5" />
-                            {dateTo ? format(dateTo, "MMM d, yyyy") : "End date"}
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
-                          <Calendar mode="single" selected={dateTo} onSelect={setDateTo} initialFocus className={cn("p-3 pointer-events-auto")} />
-                        </PopoverContent>
-                      </Popover>
+                        ))}
+                      </div>
+                      <div className="grid grid-cols-2 gap-1.5">
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button variant="outline" className={cn("w-full h-9 justify-start text-xs font-normal", !dateFrom && "text-muted-foreground")}>
+                              <CalendarIcon className="w-3.5 h-3.5 mr-1.5" />
+                              {dateFrom ? format(dateFrom, "MMM d, yyyy") : "Start date"}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar mode="single" selected={dateFrom} onSelect={setDateFrom} initialFocus className={cn("p-3 pointer-events-auto")} />
+                          </PopoverContent>
+                        </Popover>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button variant="outline" className={cn("w-full h-9 justify-start text-xs font-normal", !dateTo && "text-muted-foreground")}>
+                              <CalendarIcon className="w-3.5 h-3.5 mr-1.5" />
+                              {dateTo ? format(dateTo, "MMM d, yyyy") : "End date"}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar mode="single" selected={dateTo} onSelect={setDateTo} initialFocus className={cn("p-3 pointer-events-auto")} />
+                          </PopoverContent>
+                        </Popover>
+                      </div>
                     </div>
 
                     {/* Sort */}
