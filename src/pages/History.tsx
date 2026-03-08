@@ -291,12 +291,12 @@ export default function History() {
                   {isMobile && <span className="text-xs block mt-1">Pull down to refresh</span>}
                 </p>
               </div>
-              <div className="flex gap-2 w-full sm:w-auto flex-wrap">
+              <div className="grid grid-cols-2 sm:flex gap-2 w-full sm:w-auto">
                 <Button
                   variant={showFilters ? "default" : "outline"}
                   size="sm"
                   onClick={() => setShowFilters(!showFilters)}
-                  className="gap-1.5 flex-1 sm:flex-none"
+                  className="gap-1.5"
                 >
                   <Filter className="w-4 h-4" />
                   Filters
@@ -308,19 +308,19 @@ export default function History() {
                 </Button>
                 {history.length > 0 && (
                   <>
-                    <Button variant="outline" size="sm" onClick={handleExportCSV} className="gap-1.5 flex-1 sm:flex-none">
+                    <Button variant="outline" size="sm" onClick={handleExportCSV} className="gap-1.5">
                       <Download className="w-4 h-4" />
-                      <span className="hidden sm:inline">CSV</span>
+                      CSV
                     </Button>
-                    <Button variant="outline" size="sm" onClick={handleExportJSON} className="gap-1.5 flex-1 sm:flex-none">
+                    <Button variant="outline" size="sm" onClick={handleExportJSON} className="gap-1.5">
                       <Download className="w-4 h-4" />
-                      <span className="hidden sm:inline">JSON</span>
+                      JSON
                     </Button>
                   </>
                 )}
-                <Button asChild size="sm" className="flex-1 sm:flex-none">
+                <Button asChild size="sm">
                   <Link to="/dashboard">
-                    New Session <ArrowRight className="ml-1 w-4 h-4" />
+                    New <ArrowRight className="ml-1 w-4 h-4" />
                   </Link>
                 </Button>
               </div>
