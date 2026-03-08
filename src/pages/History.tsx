@@ -27,7 +27,7 @@ import {
   Play, Filter, CalendarIcon, ArrowUpDown, X, Download, ChevronLeft, ChevronRight, Search,
 } from "lucide-react";
 import { RecommendationComparison } from "@/components/dashboard/RecommendationComparison";
-import { format, isAfter, isBefore, startOfDay, endOfDay } from "date-fns";
+import { format, isAfter, isBefore, startOfDay, endOfDay, subDays, startOfToday } from "date-fns";
 import { toast } from "sonner";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
