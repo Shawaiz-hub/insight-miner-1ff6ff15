@@ -444,12 +444,36 @@ export default function History() {
                   </Card>
                 ) : (
                   <div className="space-y-4">
+                    {/* Bulk actions bar */}
+                    <div className="flex items-center gap-3 px-1">
+                      <Checkbox
+                        checked={selectedIds.size === filteredHistory.length && filteredHistory.length > 0}
+                        onCheckedChange={toggleSelectAll}
+                        aria-label="Select all"
+                      />
+                      <span className="text-xs text-muted-foreground">
+                        {selectedIds.size > 0 ? `${selectedIds.size} selected` : "Select all"}
+                      </span>
+                      {selectedIds.size > 0 && (
+                        <Button variant="destructive" size="sm" onClick={bulkDelete} className="gap-1.5 text-xs h-7 ml-auto">
+                          <Trash2 className="w-3.5 h-3.5" />
+                          Delete {selectedIds.size}
+                        </Button>
+                      )}
+                    </div>
                     {filteredHistory.map((item) => (
-                      <Card key={item.id} className="bg-secondary/30 border-border hover:bg-secondary/50 transition-colors">
+                      <Card key={item.id} className={cn("bg-secondary/30 border-border hover:bg-secondary/50 transition-colors", selectedIds.has(item.id) && "ring-1 ring-primary/50")}>
                         <CardContent className="py-3 sm:py-4 px-3 sm:px-6">
                           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                             <div className="flex items-center gap-3 sm:gap-4">
+                              <Checkbox
+                                checked={selectedIds.has(item.id)}
+                                onCheckedChange={() => toggleSelect(item.id)}
+                                aria-label={`Select ${item.algorithm}`}
+                              />
                               <Badge className={`${getTaskTypeColor(item.task_type)} text-xs`}>
+                                {item.task_type}
+                              </Badge>
                                 {item.task_type}
                               </Badge>
                               <div>
