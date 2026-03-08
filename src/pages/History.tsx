@@ -57,6 +57,42 @@ export default function History() {
   const [sortField, setSortField] = useState<SortField>("date");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
   const [showFilters, setShowFilters] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === filteredHistory.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(filteredHistory.map(h => h.id)));
+    }
+  };
+
+  const bulkDelete = async () => {
+    if (selectedIds.size === 0) return;
+    const ids = Array.from(selectedIds);
+    try {
+      if (isOnline) {
+        const { error } = await supabase.from("mining_history").delete().in("id", ids);
+        if (error) throw error;
+      } else {
+        for (const id of ids) await queueOfflineMutation("mining_history", "delete", { id });
+      }
+      setHistory(prev => prev.filter(item => !selectedIds.has(item.id)));
+      toast.success(`Deleted ${ids.length} entries`);
+      setSelectedIds(new Set());
+    } catch (err) {
+      console.error("Error bulk deleting:", err);
+      toast.error("Failed to delete selected entries");
+    }
+  };
 
   const fetchHistory = useCallback(async () => {
     await syncPendingMutations();
