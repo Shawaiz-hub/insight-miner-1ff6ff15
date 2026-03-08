@@ -87,12 +87,15 @@ export default function History() {
 
   const deleteHistoryItem = async (id: string) => {
     try {
-      const { error } = await supabase
-        .from("mining_history")
-        .delete()
-        .eq("id", id);
-
-      if (error) throw error;
+      if (isOnline) {
+        const { error } = await supabase
+          .from("mining_history")
+          .delete()
+          .eq("id", id);
+        if (error) throw error;
+      } else {
+        await queueOfflineMutation("mining_history", "delete", { id });
+      }
       
       setHistory(history.filter(item => item.id !== id));
       toast.success("History item deleted");
