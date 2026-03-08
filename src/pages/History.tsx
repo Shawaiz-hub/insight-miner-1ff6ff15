@@ -411,6 +411,14 @@ export default function History() {
                             {preset.label}
                           </Button>
                         ))}
+                        <Button
+                          variant={!dateFrom && !dateTo ? "default" : "outline"}
+                          size="sm"
+                          className="h-7 text-xs"
+                          onClick={() => { setDateFrom(undefined); setDateTo(undefined); }}
+                        >
+                          All time
+                        </Button>
                       </div>
                       <div className="grid grid-cols-2 gap-1.5">
                         <Popover>
