@@ -21,9 +21,10 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Input } from "@/components/ui/input";
 import {
   Loader2, Clock, Database, Trash2, ArrowRight, History as HistoryIcon,
-  Play, Filter, CalendarIcon, ArrowUpDown, X, Download, ChevronLeft, ChevronRight,
+  Play, Filter, CalendarIcon, ArrowUpDown, X, Download, ChevronLeft, ChevronRight, Search,
 } from "lucide-react";
 import { RecommendationComparison } from "@/components/dashboard/RecommendationComparison";
 import { format, isAfter, isBefore, startOfDay, endOfDay } from "date-fns";
@@ -65,7 +66,8 @@ export default function History() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const PAGE_SIZE = 10;
+  const [pageSize, setPageSize] = useState(10);
+  const [searchDataset, setSearchDataset] = useState("");
 
   const toggleSelect = (id: string) => {
     setSelectedIds(prev => {
@@ -182,6 +184,7 @@ export default function History() {
   const filteredHistory = useMemo(() => {
     let result = [...history];
 
+    if (searchDataset.trim()) result = result.filter(h => (h.dataset_name || "").toLowerCase().includes(searchDataset.trim().toLowerCase()));
     if (filterTask !== "all") result = result.filter(h => h.task_type === filterTask);
     if (filterAlgorithm !== "all") result = result.filter(h => h.algorithm === filterAlgorithm);
     if (dateFrom) result = result.filter(h => isAfter(new Date(h.created_at), startOfDay(dateFrom)));
@@ -196,24 +199,25 @@ export default function History() {
     });
 
     return result;
-  }, [history, filterTask, filterAlgorithm, dateFrom, dateTo, sortField, sortDir]);
+  }, [history, filterTask, filterAlgorithm, dateFrom, dateTo, sortField, sortDir, searchDataset]);
 
-  const totalPages = Math.max(1, Math.ceil(filteredHistory.length / PAGE_SIZE));
+  const totalPages = Math.max(1, Math.ceil(filteredHistory.length / pageSize));
   const paginatedHistory = useMemo(() => {
-    const start = (currentPage - 1) * PAGE_SIZE;
-    return filteredHistory.slice(start, start + PAGE_SIZE);
-  }, [filteredHistory, currentPage]);
+    const start = (currentPage - 1) * pageSize;
+    return filteredHistory.slice(start, start + pageSize);
+  }, [filteredHistory, currentPage, pageSize]);
 
-  // Reset page when filters change
-  useEffect(() => { setCurrentPage(1); }, [filterTask, filterAlgorithm, dateFrom, dateTo]);
+  // Reset page when filters or page size change
+  useEffect(() => { setCurrentPage(1); }, [filterTask, filterAlgorithm, dateFrom, dateTo, searchDataset, pageSize]);
 
-  const hasActiveFilters = filterTask !== "all" || filterAlgorithm !== "all" || dateFrom || dateTo;
+  const hasActiveFilters = filterTask !== "all" || filterAlgorithm !== "all" || dateFrom || dateTo || searchDataset.trim() !== "";
 
   const clearFilters = () => {
     setFilterTask("all");
     setFilterAlgorithm("all");
     setDateFrom(undefined);
     setDateTo(undefined);
+    setSearchDataset("");
   };
 
   const exportData = filteredHistory.length > 0 ? filteredHistory : history;
@@ -336,7 +340,21 @@ export default function History() {
                       </Button>
                     )}
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
+                    {/* Dataset Search */}
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-1.5">Dataset Name</p>
+                      <div className="relative">
+                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+                        <Input
+                          placeholder="Search datasets..."
+                          value={searchDataset}
+                          onChange={e => setSearchDataset(e.target.value)}
+                          className="h-9 text-xs pl-8"
+                        />
+                      </div>
+                    </div>
+
                     {/* Task Type */}
                     <div>
                       <p className="text-xs text-muted-foreground mb-1.5">Task Type</p>
@@ -543,31 +561,47 @@ export default function History() {
                     ))}
 
                     {/* Pagination */}
-                    {totalPages > 1 && (
-                      <div className="flex items-center justify-center gap-2 pt-4">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          disabled={currentPage === 1}
-                          onClick={() => setCurrentPage(p => p - 1)}
-                          className="h-8 w-8 p-0"
-                        >
-                          <ChevronLeft className="w-4 h-4" />
-                        </Button>
-                        <span className="text-sm text-muted-foreground">
-                          Page {currentPage} of {totalPages}
-                        </span>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          disabled={currentPage === totalPages}
-                          onClick={() => setCurrentPage(p => p + 1)}
-                          className="h-8 w-8 p-0"
-                        >
-                          <ChevronRight className="w-4 h-4" />
-                        </Button>
+                    <div className="flex items-center justify-between pt-4">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-muted-foreground">Rows per page</span>
+                        <Select value={String(pageSize)} onValueChange={v => setPageSize(Number(v))}>
+                          <SelectTrigger className="h-8 w-[70px] text-xs">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="5">5</SelectItem>
+                            <SelectItem value="10">10</SelectItem>
+                            <SelectItem value="20">20</SelectItem>
+                            <SelectItem value="50">50</SelectItem>
+                          </SelectContent>
+                        </Select>
                       </div>
-                    )}
+                      {totalPages > 1 && (
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={currentPage === 1}
+                            onClick={() => setCurrentPage(p => p - 1)}
+                            className="h-8 w-8 p-0"
+                          >
+                            <ChevronLeft className="w-4 h-4" />
+                          </Button>
+                          <span className="text-sm text-muted-foreground">
+                            Page {currentPage} of {totalPages}
+                          </span>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={currentPage === totalPages}
+                            onClick={() => setCurrentPage(p => p + 1)}
+                            className="h-8 w-8 p-0"
+                          >
+                            <ChevronRight className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
               </>
