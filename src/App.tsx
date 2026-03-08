@@ -20,6 +20,7 @@ const Terms = lazy(() => import("./pages/Terms"));
 const History = lazy(() => import("./pages/History"));
 const Profile = lazy(() => import("./pages/Profile"));
 const SavedRules = lazy(() => import("./pages/SavedRules"));
+const Sitemap = lazy(() => import("./pages/Sitemap"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
