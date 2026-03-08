@@ -14,6 +14,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Clock, Database, Trash2, ArrowRight, History as HistoryIcon } from "lucide-react";
+import { RecommendationComparison } from "@/components/dashboard/RecommendationComparison";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { useIsMobile } from "@/hooks/use-mobile";
