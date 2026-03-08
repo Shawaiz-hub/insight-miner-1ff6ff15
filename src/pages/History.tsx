@@ -207,8 +207,8 @@ export default function History() {
     return filteredHistory.slice(start, start + pageSize);
   }, [filteredHistory, currentPage, pageSize]);
 
-  // Reset page when filters change
-  useEffect(() => { setCurrentPage(1); }, [filterTask, filterAlgorithm, dateFrom, dateTo]);
+  // Reset page when filters or page size change
+  useEffect(() => { setCurrentPage(1); }, [filterTask, filterAlgorithm, dateFrom, dateTo, searchDataset, pageSize]);
 
   const hasActiveFilters = filterTask !== "all" || filterAlgorithm !== "all" || dateFrom || dateTo;
 
