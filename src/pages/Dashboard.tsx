@@ -55,6 +55,7 @@ export interface FrequentItemset {
 }
 
 const Dashboard = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [step, setStep] = useState<MiningStep>("upload");
   const [miningTask, setMiningTask] = useState<MiningTask>("association");
   const [dataset, setDataset] = useState<DatasetInfo | null>(null);
@@ -71,8 +72,35 @@ const Dashboard = () => {
   const [clusteringResults, setClusteringResults] = useState<ClusteringResultsType | null>(null);
   const [transactionCount, setTransactionCount] = useState(0);
   const [backendConnected, setBackendConnected] = useState<boolean | null>(null);
+  const [rerunDatasetName, setRerunDatasetName] = useState<string | null>(null);
   
   const { runMining, checkHealth, getRecommendation, isRunning, error, progress, datasetStats, datasetProfile, recommendation } = useMining();
+
+  // Handle re-run params from URL
+  useEffect(() => {
+    if (searchParams.get("rerun") === "true") {
+      const task = searchParams.get("task") as MiningTask;
+      const algorithm = searchParams.get("algorithm");
+      const datasetName = searchParams.get("dataset");
+      
+      if (task) setMiningTask(task);
+      if (algorithm) setSelectedAlgorithm(algorithm);
+      if (datasetName) setRerunDatasetName(datasetName);
+      
+      const newParams: Partial<MiningParams> = {};
+      if (searchParams.get("minSupport")) newParams.minSupport = parseFloat(searchParams.get("minSupport")!);
+      if (searchParams.get("minConfidence")) newParams.minConfidence = parseFloat(searchParams.get("minConfidence")!);
+      if (searchParams.get("maxRuleLength")) newParams.maxRuleLength = parseInt(searchParams.get("maxRuleLength")!);
+      if (searchParams.get("liftThreshold")) newParams.liftThreshold = parseFloat(searchParams.get("liftThreshold")!);
+      
+      if (Object.keys(newParams).length > 0) {
+        setParams(prev => ({ ...prev, ...newParams }));
+      }
+      
+      // Clear URL params after reading
+      setSearchParams({}, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
 
   const checkConnection = useCallback(async () => {
     const connected = await checkHealth();
