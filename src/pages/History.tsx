@@ -525,65 +525,72 @@ export default function History() {
                     </div>
                     {paginatedHistory.map((item) => (
                       <Card key={item.id} className={cn("bg-secondary/30 border-border hover:bg-secondary/50 transition-colors", selectedIds.has(item.id) && "ring-1 ring-primary/50")}>
-                        <CardContent className="py-3 sm:py-4 px-3 sm:px-6">
-                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                            <div className="flex items-center gap-3 sm:gap-4">
-                              <Checkbox
-                                checked={selectedIds.has(item.id)}
-                                onCheckedChange={() => toggleSelect(item.id)}
-                                aria-label={`Select ${item.algorithm}`}
-                              />
-                              <Badge className={`${getTaskTypeColor(item.task_type)} text-xs`}>
-                                {item.task_type}
-                              </Badge>
-                              <div>
-                                <h3 className="font-semibold text-sm sm:text-base">{item.algorithm.toUpperCase()}</h3>
-                                <p className="text-xs sm:text-sm text-muted-foreground">{item.dataset_name || "Unnamed dataset"}</p>
+                        <CardContent className="py-3 px-3 sm:py-4 sm:px-6">
+                          {/* Mobile: stacked layout */}
+                          <div className="flex items-start gap-2.5 sm:gap-4">
+                            <Checkbox
+                              checked={selectedIds.has(item.id)}
+                              onCheckedChange={() => toggleSelect(item.id)}
+                              aria-label={`Select ${item.algorithm}`}
+                              className="mt-0.5 flex-shrink-0"
+                            />
+                            <div className="flex-1 min-w-0">
+                              {/* Top row: badge + algorithm + actions */}
+                              <div className="flex items-center justify-between gap-2">
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <Badge className={`${getTaskTypeColor(item.task_type)} text-[10px] sm:text-xs flex-shrink-0`}>
+                                    {item.task_type}
+                                  </Badge>
+                                  <h3 className="font-semibold text-sm sm:text-base truncate">{item.algorithm.toUpperCase()}</h3>
+                                </div>
+                                <div className="flex items-center gap-1 flex-shrink-0">
+                                  <Button
+                                    variant="outline"
+                                    size="icon"
+                                    onClick={() => handleReRun(item)}
+                                    className="h-7 w-7 sm:h-8 sm:w-8"
+                                    title="Re-run with same parameters"
+                                  >
+                                    <Play className="w-3 h-3" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => deleteHistoryItem(item.id)}
+                                    className="text-muted-foreground hover:text-destructive h-7 w-7 sm:h-8 sm:w-8"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </Button>
+                                </div>
                               </div>
-                            </div>
-                            <div className="flex items-center justify-between sm:justify-end gap-2 sm:gap-4">
-                              <div className="text-left sm:text-right">
-                                <div className="flex items-center gap-1.5 text-xs sm:text-sm text-muted-foreground">
-                                  <Clock className="w-3.5 h-3.5" />
+                              {/* Dataset name */}
+                              <p className="text-xs text-muted-foreground truncate mt-0.5">{item.dataset_name || "Unnamed dataset"}</p>
+                              {/* Meta row */}
+                              <div className="flex items-center gap-3 mt-1.5">
+                                <div className="flex items-center gap-1 text-[10px] sm:text-xs text-muted-foreground">
+                                  <Clock className="w-3 h-3 flex-shrink-0" />
+                                  <span className="sm:hidden">{format(new Date(item.created_at), "MMM d, yy")}</span>
                                   <span className="hidden sm:inline">{format(new Date(item.created_at), "MMM d, yyyy h:mm a")}</span>
-                                  <span className="sm:hidden">{format(new Date(item.created_at), "MMM d, yyyy")}</span>
                                 </div>
                                 {item.execution_time_ms && (
-                                  <p className="text-xs text-muted-foreground">
-                                    Execution: {(item.execution_time_ms / 1000).toFixed(2)}s
-                                  </p>
+                                  <span className="text-[10px] sm:text-xs text-muted-foreground">
+                                    {(item.execution_time_ms / 1000).toFixed(2)}s
+                                  </span>
                                 )}
                               </div>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleReRun(item)}
-                                className="gap-1.5 text-xs h-8"
-                                title="Re-run with same parameters"
-                              >
-                                <Play className="w-3 h-3" />
-                                <span className="hidden sm:inline">Re-run</span>
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => deleteHistoryItem(item.id)}
-                                className="text-muted-foreground hover:text-destructive h-8 w-8"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </Button>
+                              {/* Results summary */}
+                              {item.results_summary && typeof item.results_summary === 'object' && !Array.isArray(item.results_summary) && Object.keys(item.results_summary).length > 0 && (
+                                <div className="mt-2 pt-2 border-t border-border flex flex-wrap gap-x-4 gap-y-1 sm:gap-6">
+                                  {Object.entries(item.results_summary as Record<string, unknown>).map(([key, value]) => (
+                                    <div key={key}>
+                                      <p className="text-[10px] text-muted-foreground capitalize">{key.replace(/_/g, " ")}</p>
+                                      <p className="font-semibold text-xs sm:text-sm">{typeof value === "number" ? value.toLocaleString() : String(value)}</p>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
                             </div>
                           </div>
-                          {item.results_summary && typeof item.results_summary === 'object' && !Array.isArray(item.results_summary) && Object.keys(item.results_summary).length > 0 && (
-                            <div className="mt-3 pt-3 border-t border-border flex flex-wrap gap-4 sm:gap-6">
-                              {Object.entries(item.results_summary as Record<string, unknown>).map(([key, value]) => (
-                                <div key={key}>
-                                  <p className="text-[10px] sm:text-xs text-muted-foreground capitalize">{key.replace(/_/g, " ")}</p>
-                                  <p className="font-semibold text-sm">{typeof value === "number" ? value.toLocaleString() : String(value)}</p>
-                                </div>
-                              ))}
-                            </div>
-                          )}
                         </CardContent>
                       </Card>
                     ))}
