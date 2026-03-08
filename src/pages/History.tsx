@@ -474,8 +474,6 @@ export default function History() {
                               <Badge className={`${getTaskTypeColor(item.task_type)} text-xs`}>
                                 {item.task_type}
                               </Badge>
-                                {item.task_type}
-                              </Badge>
                               <div>
                                 <h3 className="font-semibold text-sm sm:text-base">{item.algorithm.toUpperCase()}</h3>
                                 <p className="text-xs sm:text-sm text-muted-foreground">{item.dataset_name || "Unnamed dataset"}</p>
