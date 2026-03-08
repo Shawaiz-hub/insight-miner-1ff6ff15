@@ -18,7 +18,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Loader2, Clock, Database, Trash2, ArrowRight, History as HistoryIcon,
-  Play, Filter, CalendarIcon, ArrowUpDown, X,
+  Play, Filter, CalendarIcon, ArrowUpDown, X, Download,
 } from "lucide-react";
 import { RecommendationComparison } from "@/components/dashboard/RecommendationComparison";
 import { format, isAfter, isBefore, startOfDay, endOfDay } from "date-fns";
@@ -163,6 +163,40 @@ export default function History() {
     setDateTo(undefined);
   };
 
+  const exportData = filteredHistory.length > 0 ? filteredHistory : history;
+
+  const downloadFile = (content: string, filename: string, mime: string) => {
+    const blob = new Blob([content], { type: mime });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleExportJSON = () => {
+    const data = exportData.map(({ id, algorithm, task_type, dataset_name, parameters, results_summary, execution_time_ms, created_at }) => ({
+      id, algorithm, task_type, dataset_name, parameters, results_summary, execution_time_ms, created_at,
+    }));
+    downloadFile(JSON.stringify(data, null, 2), `mining-history-${format(new Date(), "yyyy-MM-dd")}.json`, "application/json");
+    toast.success(`Exported ${data.length} entries as JSON`);
+  };
+
+  const handleExportCSV = () => {
+    const headers = ["id", "algorithm", "task_type", "dataset_name", "execution_time_ms", "created_at", "parameters", "results_summary"];
+    const rows = exportData.map(item =>
+      headers.map(h => {
+        const val = item[h as keyof MiningHistoryItem];
+        if (val === null || val === undefined) return "";
+        if (typeof val === "object") return `"${JSON.stringify(val).replace(/"/g, '""')}"`;
+        return `"${String(val).replace(/"/g, '""')}"`;
+      }).join(",")
+    );
+    downloadFile([headers.join(","), ...rows].join("\n"), `mining-history-${format(new Date(), "yyyy-MM-dd")}.csv`, "text/csv");
+    toast.success(`Exported ${exportData.length} entries as CSV`);
+  };
+
   const getTaskTypeColor = (taskType: string) => {
     switch (taskType) {
       case "association": return "bg-primary/20 text-primary";
@@ -200,7 +234,7 @@ export default function History() {
                   {isMobile && <span className="text-xs block mt-1">Pull down to refresh</span>}
                 </p>
               </div>
-              <div className="flex gap-2 w-full sm:w-auto">
+              <div className="flex gap-2 w-full sm:w-auto flex-wrap">
                 <Button
                   variant={showFilters ? "default" : "outline"}
                   size="sm"
@@ -215,6 +249,18 @@ export default function History() {
                     </span>
                   )}
                 </Button>
+                {history.length > 0 && (
+                  <>
+                    <Button variant="outline" size="sm" onClick={handleExportCSV} className="gap-1.5 flex-1 sm:flex-none">
+                      <Download className="w-4 h-4" />
+                      <span className="hidden sm:inline">CSV</span>
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={handleExportJSON} className="gap-1.5 flex-1 sm:flex-none">
+                      <Download className="w-4 h-4" />
+                      <span className="hidden sm:inline">JSON</span>
+                    </Button>
+                  </>
+                )}
                 <Button asChild size="sm" className="flex-1 sm:flex-none">
                   <Link to="/dashboard">
                     New Session <ArrowRight className="ml-1 w-4 h-4" />
