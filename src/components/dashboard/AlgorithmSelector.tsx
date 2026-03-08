@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
-import { Layers, Network, Binary, Cpu, Workflow, Lock, Maximize, Check, GitBranch, Waves, Database, Lightbulb, Zap, AlertTriangle, TrendingUp } from "lucide-react";
+import { Layers, Network, Binary, Cpu, Workflow, Lock, Maximize, Check, GitBranch, Waves, Database, Lightbulb, Zap, AlertTriangle, TrendingUp, RefreshCw } from "lucide-react";
 import { AlgorithmInfoIcon } from "./AlgorithmTooltip";
 import { Button } from "@/components/ui/button";
+import { Slider } from "@/components/ui/slider";
 import { Badge } from "@/components/ui/badge";
 import type { DatasetInfo } from "@/pages/Dashboard";
 import type { AlgorithmRecommendation, DatasetProfile } from "@/hooks/useMining";
@@ -175,14 +176,23 @@ const familyDescriptions: Record<string, string> = {
 export function AlgorithmSelector({ selected, onSelect, dataset, recommendation, datasetProfile, onFetchRecommendation }: AlgorithmSelectorProps) {
   const [isLoadingRec, setIsLoadingRec] = useState(false);
   const [autoApplied, setAutoApplied] = useState(false);
+  const [recMinSupport, setRecMinSupport] = useState(0.1);
 
   // Auto-fetch recommendation when component mounts with a dataset
   useEffect(() => {
     if (dataset && !recommendation && onFetchRecommendation && !isLoadingRec) {
       setIsLoadingRec(true);
-      onFetchRecommendation(0.1).finally(() => setIsLoadingRec(false));
+      onFetchRecommendation(recMinSupport).finally(() => setIsLoadingRec(false));
     }
-  }, [dataset, recommendation, onFetchRecommendation, isLoadingRec]);
+  }, [dataset, recommendation, onFetchRecommendation, isLoadingRec, recMinSupport]);
+
+  const handleReRunRecommendation = async () => {
+    if (!onFetchRecommendation || isLoadingRec) return;
+    setIsLoadingRec(true);
+    setAutoApplied(false);
+    await onFetchRecommendation(recMinSupport);
+    setIsLoadingRec(false);
+  };
 
   // Auto-select recommended algorithm once
   useEffect(() => {
@@ -263,6 +273,38 @@ export function AlgorithmSelector({ selected, onSelect, dataset, recommendation,
                   <Zap className="w-3 h-3" />
                   Use Recommended
                 </Button>
+              </div>
+
+              {/* Min Support Slider for Re-running */}
+              <div className="mt-4 pt-4 border-t border-border/50">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-xs text-muted-foreground font-medium">Adjust Min Support & Re-analyze</p>
+                  <span className="text-xs font-mono text-primary">{(recMinSupport * 100).toFixed(0)}%</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Slider
+                    value={[recMinSupport * 100]}
+                    onValueChange={([val]) => setRecMinSupport(val / 100)}
+                    min={1}
+                    max={50}
+                    step={1}
+                    className="flex-1"
+                  />
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    className="gap-1.5 text-xs h-7 flex-shrink-0"
+                    onClick={handleReRunRecommendation}
+                    disabled={isLoadingRec}
+                  >
+                    {isLoadingRec ? (
+                      <RefreshCw className="w-3 h-3 animate-spin" />
+                    ) : (
+                      <RefreshCw className="w-3 h-3" />
+                    )}
+                    Re-analyze
+                  </Button>
+                </div>
               </div>
             </div>
           </div>

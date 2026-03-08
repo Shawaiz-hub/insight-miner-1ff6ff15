@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { Navbar } from "@/components/layout/Navbar";
+import { useOfflineCache } from "@/hooks/useOfflineCache";
 import { DataUpload } from "@/components/dashboard/DataUpload";
 import { AlgorithmSelector } from "@/components/dashboard/AlgorithmSelector";
 import { ParameterConfig } from "@/components/dashboard/ParameterConfig";
@@ -104,6 +105,13 @@ const Dashboard = () => {
     }
   };
 
+  const { cacheHistory, queueOfflineMutation, syncPendingMutations } = useOfflineCache();
+
+  // Sync pending offline mutations when online
+  useEffect(() => {
+    syncPendingMutations();
+  }, [syncPendingMutations]);
+
   const handleRunMining = async () => {
     if (!dataset) return;
     const result = await runMining(null, selectedAlgorithm, params);
@@ -112,6 +120,43 @@ const Dashboard = () => {
       setItemsets(result.itemsets);
       setTransactionCount(result.transactionCount);
       setStep("results");
+
+      // Save to history (cloud + local cache)
+      const historyEntry = {
+        id: crypto.randomUUID(),
+        algorithm: selectedAlgorithm,
+        task_type: miningTask,
+        dataset_name: dataset.name,
+        parameters: params,
+        results_summary: {
+          rules_count: result.rules.length,
+          itemsets_count: result.itemsets.length,
+          ...(recommendation ? {
+            recommended_algorithm: recommendation.top_pick,
+            recommendation_score: recommendation.recommendations?.[0]?.score,
+          } : {}),
+        },
+        execution_time_ms: result.executionTime ? Math.round(result.executionTime.total_seconds * 1000) : null,
+        created_at: new Date().toISOString(),
+      };
+
+      try {
+        const { supabase } = await import("@/integrations/supabase/client");
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          await supabase.from("mining_history").insert([{
+            algorithm: selectedAlgorithm,
+            task_type: miningTask,
+            dataset_name: dataset.name,
+            parameters: JSON.parse(JSON.stringify(params)),
+            results_summary: JSON.parse(JSON.stringify(historyEntry.results_summary)),
+            execution_time_ms: historyEntry.execution_time_ms,
+            user_id: user.id,
+          }]);
+        }
+      } catch {
+        await queueOfflineMutation("mining_history", "insert", historyEntry);
+      }
     }
   };
 
