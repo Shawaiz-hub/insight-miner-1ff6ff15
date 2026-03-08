@@ -70,7 +70,7 @@ const Dashboard = () => {
   const [transactionCount, setTransactionCount] = useState(0);
   const [backendConnected, setBackendConnected] = useState<boolean | null>(null);
   
-  const { runMining, checkHealth, isRunning, error, progress, datasetStats } = useMining();
+  const { runMining, checkHealth, getRecommendation, isRunning, error, progress, datasetStats, datasetProfile, recommendation } = useMining();
 
   const checkConnection = useCallback(async () => {
     const connected = await checkHealth();
