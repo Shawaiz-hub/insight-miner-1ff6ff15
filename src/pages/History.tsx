@@ -393,8 +393,10 @@ export default function History() {
                       <div className="flex gap-1.5 flex-wrap mb-2">
                         {[
                           { label: "Today", from: startOfToday(), to: new Date() },
-                          { label: "Last 7 days", from: subDays(new Date(), 7), to: new Date() },
-                          { label: "Last 30 days", from: subDays(new Date(), 30), to: new Date() },
+                          { label: "7 days", from: subDays(new Date(), 7), to: new Date() },
+                          { label: "30 days", from: subDays(new Date(), 30), to: new Date() },
+                          { label: "90 days", from: subDays(new Date(), 90), to: new Date() },
+                          { label: "This year", from: startOfYear(new Date()), to: new Date() },
                         ].map(preset => (
                           <Button
                             key={preset.label}
