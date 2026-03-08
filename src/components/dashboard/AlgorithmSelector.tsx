@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
-import { Layers, Network, Binary, Cpu, Workflow, Lock, Maximize, Check, GitBranch, Waves, Database, Lightbulb, Zap, AlertTriangle, TrendingUp } from "lucide-react";
+import { Layers, Network, Binary, Cpu, Workflow, Lock, Maximize, Check, GitBranch, Waves, Database, Lightbulb, Zap, AlertTriangle, TrendingUp, RefreshCw } from "lucide-react";
 import { AlgorithmInfoIcon } from "./AlgorithmTooltip";
 import { Button } from "@/components/ui/button";
+import { Slider } from "@/components/ui/slider";
 import { Badge } from "@/components/ui/badge";
 import type { DatasetInfo } from "@/pages/Dashboard";
 import type { AlgorithmRecommendation, DatasetProfile } from "@/hooks/useMining";
