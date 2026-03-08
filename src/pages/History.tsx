@@ -38,6 +38,9 @@ export default function History() {
   const { cacheHistory, getCachedHistory, syncPendingMutations, queueOfflineMutation } = useOfflineCache();
 
   const fetchHistory = useCallback(async () => {
+    // Sync any pending offline mutations first
+    await syncPendingMutations();
+    
     try {
       const { data, error } = await supabase
         .from("mining_history")
@@ -48,13 +51,10 @@ export default function History() {
       
       const historyData = data || [];
       setHistory(historyData);
-      
-      // Cache the data for offline access
       await cacheHistory(historyData);
     } catch (err) {
       console.error("Error fetching history:", err);
       
-      // If offline or error, try loading from cache
       if (!isOnline) {
         const cachedData = await getCachedHistory();
         if (cachedData.length > 0) {
@@ -67,7 +67,7 @@ export default function History() {
     } finally {
       setIsLoading(false);
     }
-  }, [isOnline, cacheHistory, getCachedHistory]);
+  }, [isOnline, cacheHistory, getCachedHistory, syncPendingMutations]);
 
   useEffect(() => {
     if (user) {
