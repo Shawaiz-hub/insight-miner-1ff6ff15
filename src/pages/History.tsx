@@ -402,7 +402,7 @@ export default function History() {
                             key={preset.label}
                             variant={dateFrom?.getTime() === startOfDay(preset.from).getTime() ? "default" : "outline"}
                             size="sm"
-                            className="h-7 text-xs"
+                            className="h-6 sm:h-7 text-[10px] sm:text-xs px-2 sm:px-3"
                             onClick={() => {
                               setDateFrom(startOfDay(preset.from));
                               setDateTo(endOfDay(preset.to));
