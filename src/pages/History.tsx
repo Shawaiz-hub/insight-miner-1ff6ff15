@@ -471,13 +471,13 @@ export default function History() {
                         {selectedIds.size > 0 ? `${selectedIds.size} selected` : "Select all"}
                       </span>
                       {selectedIds.size > 0 && (
-                        <Button variant="destructive" size="sm" onClick={bulkDelete} className="gap-1.5 text-xs h-7 ml-auto">
+                        <Button variant="destructive" size="sm" onClick={() => setShowDeleteConfirm(true)} className="gap-1.5 text-xs h-7 ml-auto">
                           <Trash2 className="w-3.5 h-3.5" />
                           Delete {selectedIds.size}
                         </Button>
                       )}
                     </div>
-                    {filteredHistory.map((item) => (
+                    {paginatedHistory.map((item) => (
                       <Card key={item.id} className={cn("bg-secondary/30 border-border hover:bg-secondary/50 transition-colors", selectedIds.has(item.id) && "ring-1 ring-primary/50")}>
                         <CardContent className="py-3 sm:py-4 px-3 sm:px-6">
                           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -541,6 +541,33 @@ export default function History() {
                         </CardContent>
                       </Card>
                     ))}
+
+                    {/* Pagination */}
+                    {totalPages > 1 && (
+                      <div className="flex items-center justify-center gap-2 pt-4">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          disabled={currentPage === 1}
+                          onClick={() => setCurrentPage(p => p - 1)}
+                          className="h-8 w-8 p-0"
+                        >
+                          <ChevronLeft className="w-4 h-4" />
+                        </Button>
+                        <span className="text-sm text-muted-foreground">
+                          Page {currentPage} of {totalPages}
+                        </span>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          disabled={currentPage === totalPages}
+                          onClick={() => setCurrentPage(p => p + 1)}
+                          className="h-8 w-8 p-0"
+                        >
+                          <ChevronRight className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 )}
               </>
