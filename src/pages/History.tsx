@@ -13,6 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -57,6 +58,42 @@ export default function History() {
   const [sortField, setSortField] = useState<SortField>("date");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
   const [showFilters, setShowFilters] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === filteredHistory.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(filteredHistory.map(h => h.id)));
+    }
+  };
+
+  const bulkDelete = async () => {
+    if (selectedIds.size === 0) return;
+    const ids = Array.from(selectedIds);
+    try {
+      if (isOnline) {
+        const { error } = await supabase.from("mining_history").delete().in("id", ids);
+        if (error) throw error;
+      } else {
+        for (const id of ids) await queueOfflineMutation("mining_history", "delete", { id });
+      }
+      setHistory(prev => prev.filter(item => !selectedIds.has(item.id)));
+      toast.success(`Deleted ${ids.length} entries`);
+      setSelectedIds(new Set());
+    } catch (err) {
+      console.error("Error bulk deleting:", err);
+      toast.error("Failed to delete selected entries");
+    }
+  };
 
   const fetchHistory = useCallback(async () => {
     await syncPendingMutations();
@@ -407,11 +444,33 @@ export default function History() {
                   </Card>
                 ) : (
                   <div className="space-y-4">
+                    {/* Bulk actions bar */}
+                    <div className="flex items-center gap-3 px-1">
+                      <Checkbox
+                        checked={selectedIds.size === filteredHistory.length && filteredHistory.length > 0}
+                        onCheckedChange={toggleSelectAll}
+                        aria-label="Select all"
+                      />
+                      <span className="text-xs text-muted-foreground">
+                        {selectedIds.size > 0 ? `${selectedIds.size} selected` : "Select all"}
+                      </span>
+                      {selectedIds.size > 0 && (
+                        <Button variant="destructive" size="sm" onClick={bulkDelete} className="gap-1.5 text-xs h-7 ml-auto">
+                          <Trash2 className="w-3.5 h-3.5" />
+                          Delete {selectedIds.size}
+                        </Button>
+                      )}
+                    </div>
                     {filteredHistory.map((item) => (
-                      <Card key={item.id} className="bg-secondary/30 border-border hover:bg-secondary/50 transition-colors">
+                      <Card key={item.id} className={cn("bg-secondary/30 border-border hover:bg-secondary/50 transition-colors", selectedIds.has(item.id) && "ring-1 ring-primary/50")}>
                         <CardContent className="py-3 sm:py-4 px-3 sm:px-6">
                           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                             <div className="flex items-center gap-3 sm:gap-4">
+                              <Checkbox
+                                checked={selectedIds.has(item.id)}
+                                onCheckedChange={() => toggleSelect(item.id)}
+                                aria-label={`Select ${item.algorithm}`}
+                              />
                               <Badge className={`${getTaskTypeColor(item.task_type)} text-xs`}>
                                 {item.task_type}
                               </Badge>
