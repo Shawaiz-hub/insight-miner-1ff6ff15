@@ -65,7 +65,8 @@ export default function History() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const PAGE_SIZE = 10;
+  const [pageSize, setPageSize] = useState(10);
+  const [searchDataset, setSearchDataset] = useState("");
 
   const toggleSelect = (id: string) => {
     setSelectedIds(prev => {
