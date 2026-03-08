@@ -274,6 +274,38 @@ export function AlgorithmSelector({ selected, onSelect, dataset, recommendation,
                   Use Recommended
                 </Button>
               </div>
+
+              {/* Min Support Slider for Re-running */}
+              <div className="mt-4 pt-4 border-t border-border/50">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-xs text-muted-foreground font-medium">Adjust Min Support & Re-analyze</p>
+                  <span className="text-xs font-mono text-primary">{(recMinSupport * 100).toFixed(0)}%</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Slider
+                    value={[recMinSupport * 100]}
+                    onValueChange={([val]) => setRecMinSupport(val / 100)}
+                    min={1}
+                    max={50}
+                    step={1}
+                    className="flex-1"
+                  />
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    className="gap-1.5 text-xs h-7 flex-shrink-0"
+                    onClick={handleReRunRecommendation}
+                    disabled={isLoadingRec}
+                  >
+                    {isLoadingRec ? (
+                      <RefreshCw className="w-3 h-3 animate-spin" />
+                    ) : (
+                      <RefreshCw className="w-3 h-3" />
+                    )}
+                    Re-analyze
+                  </Button>
+                </div>
+              </div>
             </div>
           </div>
 
