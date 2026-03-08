@@ -217,6 +217,7 @@ export default function History() {
     setFilterAlgorithm("all");
     setDateFrom(undefined);
     setDateTo(undefined);
+    setSearchDataset("");
   };
 
   const exportData = filteredHistory.length > 0 ? filteredHistory : history;
