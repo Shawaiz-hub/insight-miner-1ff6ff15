@@ -20,6 +20,7 @@ const Terms = lazy(() => import("./pages/Terms"));
 const History = lazy(() => import("./pages/History"));
 const Profile = lazy(() => import("./pages/Profile"));
 const SavedRules = lazy(() => import("./pages/SavedRules"));
+const Sitemap = lazy(() => import("./pages/Sitemap"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
@@ -40,6 +41,7 @@ function AnimatedRoutes() {
           <Route path="/saved-rules" element={<SavedRules />} />
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/terms" element={<Terms />} />
+          <Route path="/sitemap" element={<Sitemap />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
