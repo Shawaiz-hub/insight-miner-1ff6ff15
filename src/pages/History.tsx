@@ -240,6 +240,7 @@ export default function History() {
                   </Card>
                 ))}
               </div>
+              </>
             )}
           </main>
           <Footer />
