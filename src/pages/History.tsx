@@ -21,9 +21,10 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Input } from "@/components/ui/input";
 import {
   Loader2, Clock, Database, Trash2, ArrowRight, History as HistoryIcon,
-  Play, Filter, CalendarIcon, ArrowUpDown, X, Download, ChevronLeft, ChevronRight,
+  Play, Filter, CalendarIcon, ArrowUpDown, X, Download, ChevronLeft, ChevronRight, Search,
 } from "lucide-react";
 import { RecommendationComparison } from "@/components/dashboard/RecommendationComparison";
 import { format, isAfter, isBefore, startOfDay, endOfDay } from "date-fns";
