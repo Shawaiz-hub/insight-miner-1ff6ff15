@@ -141,10 +141,11 @@ const Dashboard = () => {
       };
 
       try {
-        const { data: { user } } = await (await import("@/integrations/supabase/client")).supabase.auth.getUser();
+        const { supabase } = await import("@/integrations/supabase/client");
+        const { data: { user } } = await supabase.auth.getUser();
         if (user) {
-          const { supabase } = await import("@/integrations/supabase/client");
-          await supabase.from("mining_history").insert({ ...historyEntry, user_id: user.id });
+          const insertData = { ...historyEntry, user_id: user.id };
+          await supabase.from("mining_history").insert([insertData]);
         }
       } catch {
         // Queue for offline sync
