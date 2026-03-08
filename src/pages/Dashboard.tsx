@@ -300,7 +300,14 @@ const Dashboard = () => {
             )}
             
             {step === "algorithm" && miningTask === "association" && (
-              <AlgorithmSelector selected={selectedAlgorithm} onSelect={handleAlgorithmSelect} dataset={dataset} />
+              <AlgorithmSelector 
+                selected={selectedAlgorithm} 
+                onSelect={handleAlgorithmSelect} 
+                dataset={dataset}
+                recommendation={recommendation}
+                datasetProfile={datasetProfile}
+                onFetchRecommendation={getRecommendation}
+              />
             )}
             
             {step === "algorithm" && miningTask === "classification" && (
