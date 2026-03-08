@@ -35,7 +35,7 @@ export default function History() {
   const [isLoading, setIsLoading] = useState(true);
   const isMobile = useIsMobile();
   const isOnline = useOnline();
-  const { cacheHistory, getCachedHistory } = useOfflineCache();
+  const { cacheHistory, getCachedHistory, syncPendingMutations, queueOfflineMutation } = useOfflineCache();
 
   const fetchHistory = useCallback(async () => {
     try {
