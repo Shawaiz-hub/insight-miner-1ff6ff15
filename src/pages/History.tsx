@@ -596,11 +596,11 @@ export default function History() {
                     ))}
 
                     {/* Pagination */}
-                    <div className="flex items-center justify-between pt-4">
+                    <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4">
                       <div className="flex items-center gap-2">
-                        <span className="text-xs text-muted-foreground">Rows per page</span>
+                        <span className="text-xs text-muted-foreground">Per page</span>
                         <Select value={String(pageSize)} onValueChange={v => setPageSize(Number(v))}>
-                          <SelectTrigger className="h-8 w-[70px] text-xs">
+                          <SelectTrigger className="h-8 w-[65px] text-xs">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
@@ -610,6 +610,9 @@ export default function History() {
                             <SelectItem value="50">50</SelectItem>
                           </SelectContent>
                         </Select>
+                        <span className="text-[10px] text-muted-foreground">
+                          ({filteredHistory.length} total)
+                        </span>
                       </div>
                       {totalPages > 1 && (
                         <div className="flex items-center gap-2">
@@ -622,8 +625,8 @@ export default function History() {
                           >
                             <ChevronLeft className="w-4 h-4" />
                           </Button>
-                          <span className="text-sm text-muted-foreground">
-                            Page {currentPage} of {totalPages}
+                          <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap">
+                            {currentPage} / {totalPages}
                           </span>
                           <Button
                             variant="outline"
