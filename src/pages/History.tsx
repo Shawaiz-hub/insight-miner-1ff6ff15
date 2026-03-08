@@ -184,6 +184,7 @@ export default function History() {
   const filteredHistory = useMemo(() => {
     let result = [...history];
 
+    if (searchDataset.trim()) result = result.filter(h => (h.dataset_name || "").toLowerCase().includes(searchDataset.trim().toLowerCase()));
     if (filterTask !== "all") result = result.filter(h => h.task_type === filterTask);
     if (filterAlgorithm !== "all") result = result.filter(h => h.algorithm === filterAlgorithm);
     if (dateFrom) result = result.filter(h => isAfter(new Date(h.created_at), startOfDay(dateFrom)));
