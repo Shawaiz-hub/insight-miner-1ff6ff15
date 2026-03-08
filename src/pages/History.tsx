@@ -163,6 +163,40 @@ export default function History() {
     setDateTo(undefined);
   };
 
+  const exportData = filteredHistory.length > 0 ? filteredHistory : history;
+
+  const downloadFile = (content: string, filename: string, mime: string) => {
+    const blob = new Blob([content], { type: mime });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleExportJSON = () => {
+    const data = exportData.map(({ id, algorithm, task_type, dataset_name, parameters, results_summary, execution_time_ms, created_at }) => ({
+      id, algorithm, task_type, dataset_name, parameters, results_summary, execution_time_ms, created_at,
+    }));
+    downloadFile(JSON.stringify(data, null, 2), `mining-history-${format(new Date(), "yyyy-MM-dd")}.json`, "application/json");
+    toast.success(`Exported ${data.length} entries as JSON`);
+  };
+
+  const handleExportCSV = () => {
+    const headers = ["id", "algorithm", "task_type", "dataset_name", "execution_time_ms", "created_at", "parameters", "results_summary"];
+    const rows = exportData.map(item =>
+      headers.map(h => {
+        const val = item[h as keyof MiningHistoryItem];
+        if (val === null || val === undefined) return "";
+        if (typeof val === "object") return `"${JSON.stringify(val).replace(/"/g, '""')}"`;
+        return `"${String(val).replace(/"/g, '""')}"`;
+      }).join(",")
+    );
+    downloadFile([headers.join(","), ...rows].join("\n"), `mining-history-${format(new Date(), "yyyy-MM-dd")}.csv`, "text/csv");
+    toast.success(`Exported ${exportData.length} entries as CSV`);
+  };
+
   const getTaskTypeColor = (taskType: string) => {
     switch (taskType) {
       case "association": return "bg-primary/20 text-primary";
