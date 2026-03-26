@@ -1,6 +1,6 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Database, ChevronDown, Menu, User, LogOut, History, Settings, Bookmark } from "lucide-react";
+import { Database, ChevronDown, Menu, User, LogOut, History, Settings, Bookmark, Shield } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
