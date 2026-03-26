@@ -49,7 +49,7 @@ export default function AdminSettings() {
         .single();
 
       if (data?.setting_value) {
-        setSettings({ ...defaultSettings, ...(data.setting_value as SiteSettings) });
+        setSettings({ ...defaultSettings, ...(data.setting_value as unknown as SiteSettings) });
       }
     }
     loadSettings();

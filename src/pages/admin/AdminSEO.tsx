@@ -41,7 +41,7 @@ export default function AdminSEO() {
         .single();
 
       if (data?.setting_value) {
-        setSeoData({ ...defaultPages, ...(data.setting_value as Record<string, PageSEO>) });
+        setSeoData({ ...defaultPages, ...(data.setting_value as unknown as Record<string, PageSEO>) });
       }
     }
     loadSEO();
