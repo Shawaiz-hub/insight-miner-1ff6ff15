@@ -33,6 +33,7 @@ const queryClient = new QueryClient();
 
 function AnimatedRoutes() {
   const location = useLocation();
+  useVisitorTracking();
 
   return (
     <AnimatePresence mode="wait">
