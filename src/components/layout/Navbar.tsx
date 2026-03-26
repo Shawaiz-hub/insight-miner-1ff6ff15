@@ -29,6 +29,7 @@ export function Navbar() {
   const navigate = useNavigate();
   const isHome = location.pathname === "/";
   const { user, signOut, isLoading } = useAuth();
+  const { isAdmin } = useAdmin();
 
   const handleSignOut = async () => {
     await signOut();
