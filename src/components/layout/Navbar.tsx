@@ -130,6 +130,14 @@ export function Navbar() {
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
+                {isAdmin && (
+                  <DropdownMenuItem asChild>
+                    <Link to="/admin" className="cursor-pointer text-primary">
+                      <Shield className="mr-2 h-4 w-4" />
+                      Admin Panel
+                    </Link>
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer text-destructive">
                   <LogOut className="mr-2 h-4 w-4" />
                   Sign out
