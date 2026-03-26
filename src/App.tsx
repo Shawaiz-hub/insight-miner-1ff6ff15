@@ -21,6 +21,11 @@ const History = lazy(() => import("./pages/History"));
 const Profile = lazy(() => import("./pages/Profile"));
 const SavedRules = lazy(() => import("./pages/SavedRules"));
 const Sitemap = lazy(() => import("./pages/Sitemap"));
+const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
+const AdminUsers = lazy(() => import("./pages/admin/AdminUsers"));
+const AdminSEO = lazy(() => import("./pages/admin/AdminSEO"));
+const AdminVisitors = lazy(() => import("./pages/admin/AdminVisitors"));
+const AdminSettings = lazy(() => import("./pages/admin/AdminSettings"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
