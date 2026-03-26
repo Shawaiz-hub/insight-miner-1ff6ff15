@@ -1,4 +1,5 @@
 import { Suspense, lazy, useEffect } from "react";
+import { useVisitorTracking } from "@/hooks/useVisitorTracking";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -21,12 +22,18 @@ const History = lazy(() => import("./pages/History"));
 const Profile = lazy(() => import("./pages/Profile"));
 const SavedRules = lazy(() => import("./pages/SavedRules"));
 const Sitemap = lazy(() => import("./pages/Sitemap"));
+const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
+const AdminUsers = lazy(() => import("./pages/admin/AdminUsers"));
+const AdminSEO = lazy(() => import("./pages/admin/AdminSEO"));
+const AdminVisitors = lazy(() => import("./pages/admin/AdminVisitors"));
+const AdminSettings = lazy(() => import("./pages/admin/AdminSettings"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
 
 function AnimatedRoutes() {
   const location = useLocation();
+  useVisitorTracking();
 
   return (
     <AnimatePresence mode="wait">
@@ -42,6 +49,11 @@ function AnimatedRoutes() {
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/terms" element={<Terms />} />
           <Route path="/sitemap" element={<Sitemap />} />
+          <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="/admin/users" element={<AdminUsers />} />
+          <Route path="/admin/seo" element={<AdminSEO />} />
+          <Route path="/admin/visitors" element={<AdminVisitors />} />
+          <Route path="/admin/settings" element={<AdminSettings />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
