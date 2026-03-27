@@ -54,6 +54,7 @@ export default function AdminDashboard() {
         totalVisits: visitsRes.count || 0,
         uniqueVisitors: uniqueUserIds.size,
         todayVisits: todayRes.count || 0,
+        totalBlogs: blogsRes.count || 0,
         recentActivity: recentRes.data || [],
       });
       setLoading(false);
