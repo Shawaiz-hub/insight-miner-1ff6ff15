@@ -11,7 +11,6 @@ import { BottomNav } from "@/components/layout/BottomNav";
 import { PageLoadingSkeleton } from "@/components/layout/PageTransition";
 import { offlineDB } from "@/lib/offlineDB";
 
-// Lazy load pages for better performance
 const Index = lazy(() => import("./pages/Index"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const Docs = lazy(() => import("./pages/Docs"));
@@ -22,11 +21,18 @@ const History = lazy(() => import("./pages/History"));
 const Profile = lazy(() => import("./pages/Profile"));
 const SavedRules = lazy(() => import("./pages/SavedRules"));
 const Sitemap = lazy(() => import("./pages/Sitemap"));
+const Blog = lazy(() => import("./pages/Blog"));
+const BlogPost = lazy(() => import("./pages/BlogPost"));
 const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
 const AdminUsers = lazy(() => import("./pages/admin/AdminUsers"));
 const AdminSEO = lazy(() => import("./pages/admin/AdminSEO"));
 const AdminVisitors = lazy(() => import("./pages/admin/AdminVisitors"));
 const AdminSettings = lazy(() => import("./pages/admin/AdminSettings"));
+const AdminBlogPosts = lazy(() => import("./pages/admin/AdminBlogPosts"));
+const AdminBlogEditor = lazy(() => import("./pages/admin/AdminBlogEditor"));
+const AdminBlogCategories = lazy(() => import("./pages/admin/AdminBlogCategories"));
+const AdminBlogTags = lazy(() => import("./pages/admin/AdminBlogTags"));
+const AdminHomeSections = lazy(() => import("./pages/admin/AdminHomeSections"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
@@ -49,11 +55,19 @@ function AnimatedRoutes() {
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/terms" element={<Terms />} />
           <Route path="/sitemap" element={<Sitemap />} />
+          <Route path="/blog" element={<Blog />} />
+          <Route path="/blog/:slug" element={<BlogPost />} />
           <Route path="/admin" element={<AdminDashboard />} />
           <Route path="/admin/users" element={<AdminUsers />} />
           <Route path="/admin/seo" element={<AdminSEO />} />
           <Route path="/admin/visitors" element={<AdminVisitors />} />
           <Route path="/admin/settings" element={<AdminSettings />} />
+          <Route path="/admin/blog" element={<AdminBlogPosts />} />
+          <Route path="/admin/blog/new" element={<AdminBlogEditor />} />
+          <Route path="/admin/blog/edit/:id" element={<AdminBlogEditor />} />
+          <Route path="/admin/blog/categories" element={<AdminBlogCategories />} />
+          <Route path="/admin/blog/tags" element={<AdminBlogTags />} />
+          <Route path="/admin/home-sections" element={<AdminHomeSections />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
@@ -63,7 +77,6 @@ function AnimatedRoutes() {
 }
 
 const App = () => {
-  // Initialize offline DB on app start
   useEffect(() => {
     offlineDB.init().catch(err => console.warn("Failed to initialize offline DB:", err));
   }, []);

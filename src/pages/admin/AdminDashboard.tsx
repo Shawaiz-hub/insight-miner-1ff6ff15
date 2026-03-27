@@ -2,13 +2,14 @@ import { useEffect, useState } from "react";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
-import { Users, Eye, Activity, Database } from "lucide-react";
+import { Users, Eye, Activity, Database, FileText } from "lucide-react";
 
 interface DashboardStats {
   totalUsers: number;
   totalVisits: number;
   uniqueVisitors: number;
   todayVisits: number;
+  totalBlogs: number;
   recentActivity: Array<{
     page_path: string;
     created_at: string;
@@ -22,13 +23,14 @@ export default function AdminDashboard() {
     totalVisits: 0,
     uniqueVisitors: 0,
     todayVisits: 0,
+    totalBlogs: 0,
     recentActivity: [],
   });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function fetchStats() {
-      const [profilesRes, visitsRes, todayRes, recentRes] = await Promise.all([
+      const [profilesRes, visitsRes, todayRes, recentRes, blogsRes] = await Promise.all([
         supabase.from("profiles").select("id", { count: "exact", head: true }),
         supabase.from("visitor_logs").select("id", { count: "exact", head: true }),
         supabase.from("visitor_logs").select("id", { count: "exact", head: true })
@@ -36,6 +38,7 @@ export default function AdminDashboard() {
         supabase.from("visitor_logs").select("page_path, created_at, user_id")
           .order("created_at", { ascending: false })
           .limit(20),
+        supabase.from("blog_posts").select("id", { count: "exact", head: true }).eq("is_deleted", false),
       ]);
 
       // Count unique non-null user_ids from visitor logs
@@ -51,6 +54,7 @@ export default function AdminDashboard() {
         totalVisits: visitsRes.count || 0,
         uniqueVisitors: uniqueUserIds.size,
         todayVisits: todayRes.count || 0,
+        totalBlogs: blogsRes.count || 0,
         recentActivity: recentRes.data || [],
       });
       setLoading(false);
@@ -64,6 +68,7 @@ export default function AdminDashboard() {
     { title: "Total Page Views", value: stats.totalVisits, icon: Eye, color: "text-green-500" },
     { title: "Logged-in Visitors", value: stats.uniqueVisitors, icon: Activity, color: "text-yellow-500" },
     { title: "Today's Views", value: stats.todayVisits, icon: Database, color: "text-purple-500" },
+    { title: "Total Blogs", value: stats.totalBlogs, icon: FileText, color: "text-cyan-500" },
   ];
 
   return (
