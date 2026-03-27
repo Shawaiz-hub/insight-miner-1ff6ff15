@@ -68,6 +68,7 @@ export default function AdminDashboard() {
     { title: "Total Page Views", value: stats.totalVisits, icon: Eye, color: "text-green-500" },
     { title: "Logged-in Visitors", value: stats.uniqueVisitors, icon: Activity, color: "text-yellow-500" },
     { title: "Today's Views", value: stats.todayVisits, icon: Database, color: "text-purple-500" },
+    { title: "Total Blogs", value: stats.totalBlogs, icon: FileText, color: "text-cyan-500" },
   ];
 
   return (
