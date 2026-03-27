@@ -30,7 +30,7 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     async function fetchStats() {
-      const [profilesRes, visitsRes, todayRes, recentRes] = await Promise.all([
+      const [profilesRes, visitsRes, todayRes, recentRes, blogsRes] = await Promise.all([
         supabase.from("profiles").select("id", { count: "exact", head: true }),
         supabase.from("visitor_logs").select("id", { count: "exact", head: true }),
         supabase.from("visitor_logs").select("id", { count: "exact", head: true })
@@ -38,6 +38,7 @@ export default function AdminDashboard() {
         supabase.from("visitor_logs").select("page_path, created_at, user_id")
           .order("created_at", { ascending: false })
           .limit(20),
+        supabase.from("blog_posts").select("id", { count: "exact", head: true }).eq("is_deleted", false),
       ]);
 
       // Count unique non-null user_ids from visitor logs
