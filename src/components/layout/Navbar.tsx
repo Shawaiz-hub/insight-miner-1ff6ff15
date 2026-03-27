@@ -75,6 +75,9 @@ export function Navbar() {
               ))}
             </DropdownMenuContent>
           </DropdownMenu>
+          <Link to="/blog" className="nav-link text-sm">
+            Blog
+          </Link>
           <Link to="/docs" className="nav-link text-sm">
             Documentation
           </Link>

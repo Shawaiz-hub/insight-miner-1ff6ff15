@@ -6,6 +6,10 @@ import {
   Globe,
   ArrowLeft,
   Eye,
+  FileText,
+  FolderOpen,
+  Tags,
+  Home,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -14,6 +18,10 @@ const adminLinks = [
   { to: "/admin/users", icon: Users, label: "Users" },
   { to: "/admin/seo", icon: Globe, label: "SEO Management" },
   { to: "/admin/visitors", icon: Eye, label: "Visitor Logs" },
+  { to: "/admin/blog", icon: FileText, label: "Blog Posts" },
+  { to: "/admin/blog/categories", icon: FolderOpen, label: "Categories" },
+  { to: "/admin/blog/tags", icon: Tags, label: "Tags" },
+  { to: "/admin/home-sections", icon: Home, label: "Homepage Sections" },
   { to: "/admin/settings", icon: Settings, label: "Settings" },
 ];
 
