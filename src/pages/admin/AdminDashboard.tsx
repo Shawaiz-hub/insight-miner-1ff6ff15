@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
-import { Users, Eye, Activity, Database } from "lucide-react";
+import { Users, Eye, Activity, Database, FileText } from "lucide-react";
 
 interface DashboardStats {
   totalUsers: number;
