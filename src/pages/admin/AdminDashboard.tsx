@@ -23,6 +23,7 @@ export default function AdminDashboard() {
     totalVisits: 0,
     uniqueVisitors: 0,
     todayVisits: 0,
+    totalBlogs: 0,
     recentActivity: [],
   });
   const [loading, setLoading] = useState(true);
