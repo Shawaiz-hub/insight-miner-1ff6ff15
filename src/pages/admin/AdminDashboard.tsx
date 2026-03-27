@@ -9,6 +9,7 @@ interface DashboardStats {
   totalVisits: number;
   uniqueVisitors: number;
   todayVisits: number;
+  totalBlogs: number;
   recentActivity: Array<{
     page_path: string;
     created_at: string;
