@@ -115,13 +115,16 @@ export default function Auth() {
   const handleGoogleSignIn = async () => {
     setError(null);
     setIsLoading(true);
-    
     const { error } = await signInWithGoogle();
-    
-    if (error) {
-      setError(error.message);
-    }
-    
+    if (error) setError(error.message);
+    setIsLoading(false);
+  };
+
+  const handleAppleSignIn = async () => {
+    setError(null);
+    setIsLoading(true);
+    const { error } = await signInWithApple();
+    if (error) setError(error.message);
     setIsLoading(false);
   };
 
