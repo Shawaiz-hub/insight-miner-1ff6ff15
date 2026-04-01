@@ -16,7 +16,7 @@ const nameSchema = z.string().min(2, "Name must be at least 2 characters").optio
 
 export default function Auth() {
   const navigate = useNavigate();
-  const { user, signIn, signUp, signInWithGoogle, isLoading: authLoading } = useAuth();
+  const { user, signIn, signUp, signInWithGoogle, signInWithApple, isLoading: authLoading } = useAuth();
   
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
