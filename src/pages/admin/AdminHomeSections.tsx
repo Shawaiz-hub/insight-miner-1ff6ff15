@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { AdminLayout } from "@/components/admin/AdminLayout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -32,7 +32,9 @@ const defaultSections: HomeSection[] = [
 export default function AdminHomeSections() {
   const [sections, setSections] = useState<HomeSection[]>(defaultSections);
   const [saving, setSaving] = useState(false);
+  const [hasChanges, setHasChanges] = useState(false);
   const { toast } = useToast();
+  const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const load = async () => {
@@ -51,6 +53,8 @@ export default function AdminHomeSections() {
     load();
   }, []);
 
+  const markChanged = () => setHasChanges(true);
+
   const handleSave = async () => {
     setSaving(true);
     const { error } = await supabase.from("site_settings").upsert({
@@ -60,9 +64,10 @@ export default function AdminHomeSections() {
     }, { onConflict: "setting_key" });
 
     if (error) {
-      toast({ title: "Error saving", variant: "destructive" });
+      toast({ title: "Error saving", description: error.message, variant: "destructive" });
     } else {
       toast({ title: "Homepage sections saved!" });
+      setHasChanges(false);
     }
     setSaving(false);
   };
@@ -74,44 +79,57 @@ export default function AdminHomeSections() {
     [newSections[index], newSections[swapIndex]] = [newSections[swapIndex], newSections[index]];
     newSections.forEach((s, i) => (s.order = i));
     setSections(newSections);
+    markChanged();
   };
 
   const toggleSection = (index: number) => {
     setSections((prev) =>
       prev.map((s, i) => (i === index ? { ...s, enabled: !s.enabled } : s))
     );
+    markChanged();
   };
 
   const updateSection = (index: number, field: keyof HomeSection, value: string) => {
     setSections((prev) =>
       prev.map((s, i) => (i === index ? { ...s, [field]: value } : s))
     );
+    markChanged();
   };
 
   const addCustomSection = () => {
     const id = `custom-${Date.now()}`;
     setSections((prev) => [
       ...prev,
-      { id, title: "New Custom Section", subtitle: "", content: "<p>Your content here</p>", type: "custom", enabled: true, order: prev.length },
+      { id, title: "New Custom Section", subtitle: "", content: "<p>Your content here</p>", type: "custom" as const, enabled: true, order: prev.length },
     ]);
+    markChanged();
+    toast({ title: "Custom section added!", description: "Edit it below, then click Save." });
+    setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
   };
 
   const removeSection = (index: number) => {
     const section = sections[index];
     if (section.type !== "custom") return;
     setSections((prev) => prev.filter((_, i) => i !== index));
+    markChanged();
+    toast({ title: "Section removed", description: "Click Save to apply changes." });
   };
 
   return (
     <AdminLayout>
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold">Homepage Sections</h1>
+          <div>
+            <h1 className="text-2xl font-bold">Homepage Sections</h1>
+            {hasChanges && (
+              <p className="text-sm text-amber-500 mt-1">You have unsaved changes</p>
+            )}
+          </div>
           <div className="flex gap-2">
             <Button variant="outline" onClick={addCustomSection}>
               <Plus className="w-4 h-4 mr-2" /> Add Section
             </Button>
-            <Button onClick={handleSave} disabled={saving}>
+            <Button onClick={handleSave} disabled={saving || !hasChanges}>
               <Save className="w-4 h-4 mr-2" />
               {saving ? "Saving..." : "Save"}
             </Button>
@@ -169,6 +187,7 @@ export default function AdminHomeSections() {
             </Card>
           ))}
         </div>
+        <div ref={bottomRef} />
       </div>
     </AdminLayout>
   );
