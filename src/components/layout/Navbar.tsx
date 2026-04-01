@@ -174,6 +174,12 @@ export function Navbar() {
               <Link to="/dashboard" className="text-base sm:text-lg font-medium">
                 Dashboard
               </Link>
+              <Link to="/blog" className="text-base sm:text-lg font-medium">
+                Blog
+              </Link>
+              <Link to="/docs" className="text-base sm:text-lg font-medium">
+                Documentation
+              </Link>
               {user && (
                 <>
                   <Link to="/history" className="text-base sm:text-lg font-medium">
