@@ -81,6 +81,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  const signInWithApple = useCallback(async () => {
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "apple",
+        options: {
+          redirectTo: window.location.origin,
+        },
+      });
+      return { error: error ? new Error(error.message) : null };
+    } catch (err) {
+      return { error: err instanceof Error ? err : new Error("Apple sign-in failed") };
+    }
+  }, []);
+
   const signOut = useCallback(async () => {
     await supabase.auth.signOut();
     setUser(null);
