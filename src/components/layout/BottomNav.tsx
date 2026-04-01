@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, History, User, Bookmark } from "lucide-react";
+import { LayoutDashboard, History, User, Bookmark, FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -7,6 +7,7 @@ const navItems = [
   { path: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { path: "/history", label: "History", icon: History },
   { path: "/saved-rules", label: "Saved", icon: Bookmark },
+  { path: "/docs", label: "Docs", icon: FileText },
   { path: "/profile", label: "Profile", icon: User },
 ];
 
