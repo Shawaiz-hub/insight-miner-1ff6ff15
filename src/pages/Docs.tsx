@@ -1,6 +1,16 @@
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { Layers, Network, Binary, Cpu, Workflow, Lock, Maximize, BookOpen, Code, FileText } from "lucide-react";
+import { FAQSection } from "@/components/home/FAQSection";
+
+const docsFAQs = [
+  { question: "How do I choose the right algorithm?", answer: "For sparse datasets with many items, use Apriori or FP-Growth. For dense datasets, ECLAT or CHARM perform better. FP-Growth is generally the fastest for large datasets. Use the algorithm recommendation feature in the dashboard for personalized suggestions." },
+  { question: "What do support, confidence, and lift mean?", answer: "Support measures how frequently an itemset appears in the dataset. Confidence measures the reliability of a rule (probability of consequent given antecedent). Lift measures the strength of association — a lift > 1 indicates positive correlation." },
+  { question: "How do I set minimum support and confidence?", answer: "Start with min_support of 0.01–0.05 (1–5%) and min_confidence of 0.5 (50%). Adjust based on results: lower thresholds find more rules but may include noise; higher thresholds yield fewer but stronger rules." },
+  { question: "What is the difference between closed and maximal itemsets?", answer: "A closed itemset has no superset with the same support. A maximal frequent itemset has no frequent superset. CHARM mines closed itemsets, while MaxMiner finds maximal ones. Closed itemsets preserve all frequency information." },
+  { question: "Can I use SmartMine for market basket analysis?", answer: "Absolutely. SmartMine is ideal for market basket analysis. Upload your transaction data as CSV, select an association rule algorithm (Apriori, FP-Growth, or ECLAT), configure thresholds, and discover which products are frequently purchased together." },
+  { question: "How do I export my mining results?", answer: "After running an analysis, use the Export button on the results page. You can export rules, visualizations, and summary statistics in CSV format for further analysis in spreadsheet tools or other applications." },
+];
 
 const algorithms = [
   {
