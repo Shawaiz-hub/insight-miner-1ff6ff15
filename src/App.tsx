@@ -23,6 +23,7 @@ const SavedRules = lazy(() => import("./pages/SavedRules"));
 const Sitemap = lazy(() => import("./pages/Sitemap"));
 const Blog = lazy(() => import("./pages/Blog"));
 const BlogPost = lazy(() => import("./pages/BlogPost"));
+const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
 const AdminUsers = lazy(() => import("./pages/admin/AdminUsers"));
 const AdminSEO = lazy(() => import("./pages/admin/AdminSEO"));
