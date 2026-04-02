@@ -211,6 +211,10 @@ export default function Auth() {
                     </div>
                   </div>
 
+                   <div className="flex justify-end">
+                    <ForgotPasswordDialog />
+                  </div>
+
                   <Button type="submit" className="w-full" disabled={isLoading}>
                     {isLoading ? (
                       <>

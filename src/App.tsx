@@ -58,6 +58,7 @@ function AnimatedRoutes() {
           <Route path="/sitemap" element={<Sitemap />} />
           <Route path="/blog" element={<Blog />} />
           <Route path="/blog/:slug" element={<BlogPost />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/admin" element={<AdminDashboard />} />
           <Route path="/admin/users" element={<AdminUsers />} />
           <Route path="/admin/seo" element={<AdminSEO />} />
