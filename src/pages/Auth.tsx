@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Database, Mail, Lock, User, AlertCircle, Loader2 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { z } from "zod";
+import { ForgotPasswordDialog } from "@/components/auth/ForgotPasswordDialog";
 
 const emailSchema = z.string().email("Please enter a valid email address");
 const passwordSchema = z.string().min(6, "Password must be at least 6 characters");
@@ -208,6 +209,10 @@ export default function Auth() {
                         required
                       />
                     </div>
+                  </div>
+
+                   <div className="flex justify-end">
+                    <ForgotPasswordDialog />
                   </div>
 
                   <Button type="submit" className="w-full" disabled={isLoading}>
