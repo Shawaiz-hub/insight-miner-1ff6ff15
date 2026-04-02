@@ -159,6 +159,13 @@ const Docs = () => {
         Output rule`}
             </pre>
           </section>
+
+          <FAQSection
+            faqs={docsFAQs}
+            title="Algorithm FAQ"
+            subtitle="Common questions about data mining algorithms and usage"
+            schemaId="docs-faq"
+          />
         </div>
       </main>
       <Footer />
