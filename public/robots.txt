@@ -13,4 +13,4 @@ Allow: /
 User-agent: *
 Allow: /
 
-Sitemap: https://advance-data-mining.vercel.app/sitemap.xml
+Sitemap: https://advance-data-mining.vercel.app/site-map.xml
