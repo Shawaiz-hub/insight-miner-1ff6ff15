@@ -34,6 +34,7 @@ const AdminBlogEditor = lazy(() => import("./pages/admin/AdminBlogEditor"));
 const AdminBlogCategories = lazy(() => import("./pages/admin/AdminBlogCategories"));
 const AdminBlogTags = lazy(() => import("./pages/admin/AdminBlogTags"));
 const AdminHomeSections = lazy(() => import("./pages/admin/AdminHomeSections"));
+const AdminSitemap = lazy(() => import("./pages/admin/AdminSitemap"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
@@ -70,6 +71,7 @@ function AnimatedRoutes() {
           <Route path="/admin/blog/categories" element={<AdminBlogCategories />} />
           <Route path="/admin/blog/tags" element={<AdminBlogTags />} />
           <Route path="/admin/home-sections" element={<AdminHomeSections />} />
+          <Route path="/admin/sitemap" element={<AdminSitemap />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
