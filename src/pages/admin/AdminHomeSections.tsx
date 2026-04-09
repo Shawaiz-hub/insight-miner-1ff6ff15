@@ -15,7 +15,7 @@ interface HomeSection {
   title: string;
   subtitle: string;
   content: string;
-  type: "hero" | "stats" | "algorithms" | "workflow" | "blog" | "cta" | "custom";
+  type: "hero" | "stats" | "algorithms" | "workflow" | "blog" | "cta" | "faq" | "custom";
   enabled: boolean;
   order: number;
 }
@@ -26,7 +26,8 @@ const defaultSections: HomeSection[] = [
   { id: "algorithms", title: "Algorithms Section", subtitle: "", content: "", type: "algorithms", enabled: true, order: 2 },
   { id: "workflow", title: "Workflow Section", subtitle: "", content: "", type: "workflow", enabled: true, order: 3 },
   { id: "blog", title: "Blog Section", subtitle: "", content: "", type: "blog", enabled: true, order: 4 },
-  { id: "cta", title: "CTA Section", subtitle: "", content: "", type: "cta", enabled: true, order: 5 },
+  { id: "faq", title: "FAQ Section", subtitle: "", content: "", type: "faq" as any, enabled: true, order: 5 },
+  { id: "cta", title: "CTA Section", subtitle: "", content: "", type: "cta", enabled: true, order: 6 },
 ];
 
 export default function AdminHomeSections() {
