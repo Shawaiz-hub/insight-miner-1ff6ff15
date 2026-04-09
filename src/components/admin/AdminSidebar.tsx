@@ -10,6 +10,7 @@ import {
   FolderOpen,
   Tags,
   Home,
+  Map,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -22,6 +23,7 @@ const adminLinks = [
   { to: "/admin/blog/categories", icon: FolderOpen, label: "Categories" },
   { to: "/admin/blog/tags", icon: Tags, label: "Tags" },
   { to: "/admin/home-sections", icon: Home, label: "Homepage Sections" },
+  { to: "/admin/sitemap", icon: Map, label: "Sitemap" },
   { to: "/admin/settings", icon: Settings, label: "Settings" },
 ];
 
