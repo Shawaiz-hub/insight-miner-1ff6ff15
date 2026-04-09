@@ -160,6 +160,139 @@ const Docs = () => {
             </pre>
           </section>
 
+          {/* API Reference */}
+          <section id="api" className="mt-12 space-y-6">
+            <h2 className="text-2xl font-bold">API Reference</h2>
+            <div className="glass-card rounded-2xl p-6 space-y-6">
+              <div>
+                <h3 className="text-lg font-semibold mb-2 flex items-center gap-2">
+                  <Code className="w-5 h-5 text-primary" />
+                  POST /api/mine
+                </h3>
+                <p className="text-sm text-muted-foreground mb-3">Run a mining algorithm on your dataset. Returns frequent itemsets and association rules.</p>
+                <pre className="bg-secondary/50 rounded-xl p-4 overflow-x-auto text-sm font-mono text-muted-foreground">
+{`{
+  "algorithm": "apriori" | "fpgrowth" | "eclat" | "charm",
+  "data": [["bread","milk"], ["bread","eggs","milk"]],
+  "min_support": 0.3,
+  "min_confidence": 0.7,
+  "min_lift": 1.0
+}`}
+                </pre>
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold mb-2 flex items-center gap-2">
+                  <Code className="w-5 h-5 text-primary" />
+                  POST /api/classify
+                </h3>
+                <p className="text-sm text-muted-foreground mb-3">Run classification (Decision Tree, Naive Bayes, KNN, SVM, Random Forest) on labeled data.</p>
+                <pre className="bg-secondary/50 rounded-xl p-4 overflow-x-auto text-sm font-mono text-muted-foreground">
+{`{
+  "algorithm": "decision_tree" | "naive_bayes" | "knn" | "svm" | "random_forest",
+  "data": [[...features], ...],
+  "labels": ["class1", "class2", ...],
+  "test_size": 0.2
+}`}
+                </pre>
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold mb-2 flex items-center gap-2">
+                  <Code className="w-5 h-5 text-primary" />
+                  POST /api/cluster
+                </h3>
+                <p className="text-sm text-muted-foreground mb-3">Run clustering (K-Means, DBSCAN, Hierarchical) on unlabeled data.</p>
+                <pre className="bg-secondary/50 rounded-xl p-4 overflow-x-auto text-sm font-mono text-muted-foreground">
+{`{
+  "algorithm": "kmeans" | "dbscan" | "hierarchical",
+  "data": [[...features], ...],
+  "n_clusters": 3,        // for kmeans/hierarchical
+  "eps": 0.5,             // for dbscan
+  "min_samples": 5        // for dbscan
+}`}
+                </pre>
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold mb-2 flex items-center gap-2">
+                  <Code className="w-5 h-5 text-primary" />
+                  Response Format
+                </h3>
+                <pre className="bg-secondary/50 rounded-xl p-4 overflow-x-auto text-sm font-mono text-muted-foreground">
+{`{
+  "success": true,
+  "execution_time_ms": 245,
+  "results": {
+    "rules": [
+      {
+        "antecedent": ["bread"],
+        "consequent": ["milk"],
+        "support": 0.45,
+        "confidence": 0.82,
+        "lift": 1.34
+      }
+    ],
+    "frequent_itemsets": [...]
+  }
+}`}
+                </pre>
+              </div>
+            </div>
+          </section>
+
+          {/* Examples */}
+          <section id="examples" className="mt-12 space-y-6">
+            <h2 className="text-2xl font-bold">Examples</h2>
+
+            <div className="glass-card rounded-2xl p-6">
+              <h3 className="text-lg font-semibold mb-3">1. Market Basket Analysis with Apriori</h3>
+              <p className="text-sm text-muted-foreground mb-4">Upload a CSV of grocery transactions and discover which products are frequently bought together.</p>
+              <pre className="bg-secondary/50 rounded-xl p-4 overflow-x-auto text-sm font-mono text-muted-foreground">
+{`Step 1: Prepare CSV (one transaction per row)
+  bread, milk, eggs
+  bread, butter
+  milk, eggs, cheese
+  bread, milk, butter, eggs
+
+Step 2: Upload to SmartMine dashboard
+Step 3: Select "Apriori" algorithm
+Step 4: Set min_support = 0.3, min_confidence = 0.6
+Step 5: Click "Run Analysis"
+
+Result: {bread} → {milk}  (support: 0.75, confidence: 0.85, lift: 1.13)`}
+              </pre>
+            </div>
+
+            <div className="glass-card rounded-2xl p-6">
+              <h3 className="text-lg font-semibold mb-3">2. Customer Segmentation with K-Means</h3>
+              <p className="text-sm text-muted-foreground mb-4">Cluster customers based on purchasing behavior to identify distinct market segments.</p>
+              <pre className="bg-secondary/50 rounded-xl p-4 overflow-x-auto text-sm font-mono text-muted-foreground">
+{`Step 1: Prepare CSV with numeric features
+  customer_id, annual_spend, visit_frequency, avg_basket_size
+  C001, 5200, 48, 35.50
+  C002, 1200, 12, 22.00
+
+Step 2: Upload and select "Clustering" task
+Step 3: Choose K-Means, set K=3
+Step 4: Run and visualize clusters
+
+Result: 3 segments — High-Value, Occasional, Budget shoppers`}
+              </pre>
+            </div>
+
+            <div className="glass-card rounded-2xl p-6">
+              <h3 className="text-lg font-semibold mb-3">3. FP-Growth for Large Datasets</h3>
+              <p className="text-sm text-muted-foreground mb-4">When your dataset has 10,000+ transactions, FP-Growth is significantly faster than Apriori.</p>
+              <pre className="bg-secondary/50 rounded-xl p-4 overflow-x-auto text-sm font-mono text-muted-foreground">
+{`Step 1: Upload large transaction CSV
+Step 2: Select "FP-Growth" (recommended by algorithm advisor)
+Step 3: Set min_support = 0.01 for sparse datasets
+Step 4: Run — typically 5-10x faster than Apriori
+
+Tip: Use the Algorithm Recommendation feature
+     to automatically select the best algorithm`}
+              </pre>
+            </div>
+          </section>
+
           <FAQSection
             faqs={docsFAQs}
             title="Algorithm FAQ"
