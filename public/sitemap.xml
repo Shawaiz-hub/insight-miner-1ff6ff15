@@ -19,6 +19,24 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://advance-data-mining.vercel.app/docs#api</loc>
+    <lastmod>2026-04-09</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://advance-data-mining.vercel.app/docs#examples</loc>
+    <lastmod>2026-04-09</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://advance-data-mining.vercel.app/docs#faq</loc>
+    <lastmod>2026-04-09</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://advance-data-mining.vercel.app/blog</loc>
     <lastmod>2026-04-09</lastmod>
     <changefreq>daily</changefreq>
@@ -28,7 +46,7 @@
     <loc>https://advance-data-mining.vercel.app/auth</loc>
     <lastmod>2026-04-09</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
+    <priority>0.6</priority>
   </url>
   <url>
     <loc>https://advance-data-mining.vercel.app/history</loc>
@@ -40,7 +58,7 @@
     <loc>https://advance-data-mining.vercel.app/profile</loc>
     <lastmod>2026-04-09</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.5</priority>
   </url>
   <url>
     <loc>https://advance-data-mining.vercel.app/saved-rules</loc>

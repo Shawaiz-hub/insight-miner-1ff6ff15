@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Database, Github, Twitter, Linkedin } from "lucide-react";
+import { Database, Github, Linkedin } from "lucide-react";
 
 export function Footer() {
   return (
@@ -37,19 +37,17 @@ export function Footer() {
               <li><Link to="/docs#api" className="hover:text-foreground transition-colors">API Reference</Link></li>
               <li><Link to="/docs#examples" className="hover:text-foreground transition-colors">Examples</Link></li>
               <li><Link to="/docs#faq" className="hover:text-foreground transition-colors">FAQ</Link></li>
+              <li><Link to="/blog" className="hover:text-foreground transition-colors">Blog</Link></li>
             </ul>
           </div>
 
           <div className="col-span-2 sm:col-span-1">
             <h4 className="font-semibold mb-3 sm:mb-4 text-sm sm:text-base">Connect</h4>
             <div className="flex gap-2 sm:gap-3">
-              <a href="#" className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-secondary flex items-center justify-center hover:bg-primary/20 transition-colors">
+              <a href="https://github.com/Shawaiz-hub" target="_blank" rel="noopener noreferrer" className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-secondary flex items-center justify-center hover:bg-primary/20 transition-colors">
                 <Github className="w-4 h-4 sm:w-5 sm:h-5" />
               </a>
-              <a href="#" className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-secondary flex items-center justify-center hover:bg-primary/20 transition-colors">
-                <Twitter className="w-4 h-4 sm:w-5 sm:h-5" />
-              </a>
-              <a href="#" className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-secondary flex items-center justify-center hover:bg-primary/20 transition-colors">
+              <a href="https://www.linkedin.com/in/shawaiz-ali-2025b1394" target="_blank" rel="noopener noreferrer" className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-secondary flex items-center justify-center hover:bg-primary/20 transition-colors">
                 <Linkedin className="w-4 h-4 sm:w-5 sm:h-5" />
               </a>
             </div>
