@@ -87,15 +87,13 @@ export default function BlogPost() {
     fetchPost();
   }, [slug]);
 
-  // SEO meta tags
-  useEffect(() => {
-    if (post) {
-      document.title = post.seo_title || post.title;
-      const metaDesc = document.querySelector('meta[name="description"]');
-      if (metaDesc) metaDesc.setAttribute("content", post.meta_description || post.excerpt || "");
-    }
-    return () => { document.title = "SmartMine"; };
-  }, [post]);
+  useSEO({
+    title: post?.seo_title || post?.title || "Blog Post",
+    description: post?.meta_description || post?.excerpt || "Read this article on SmartMine blog.",
+    path: `/blog/${slug}`,
+    image: post?.featured_image || undefined,
+    type: "article",
+  });
 
   if (loading) {
     return (

@@ -24,6 +24,7 @@ interface Profile {
 }
 
 export default function ProfilePage() {
+  useSEO({ title: "Profile", description: "Manage your SmartMine account settings and profile information.", path: "/profile" });
   const { user, isLoading: authLoading } = useRequireAuth();
   const { signOut } = useAuth();
   const navigate = useNavigate();
