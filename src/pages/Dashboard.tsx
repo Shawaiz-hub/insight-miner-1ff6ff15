@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Navbar } from "@/components/layout/Navbar";
+import { useSEO } from "@/hooks/useSEO";
 import { useOfflineCache } from "@/hooks/useOfflineCache";
 import { DataUpload } from "@/components/dashboard/DataUpload";
 import { AlgorithmSelector } from "@/components/dashboard/AlgorithmSelector";

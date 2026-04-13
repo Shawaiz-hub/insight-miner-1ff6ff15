@@ -1,5 +1,6 @@
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
+import { useSEO } from "@/hooks/useSEO";
 import { Layers, Network, Binary, Cpu, Workflow, Lock, Maximize, BookOpen, Code, FileText } from "lucide-react";
 import { FAQSection } from "@/components/home/FAQSection";
 
