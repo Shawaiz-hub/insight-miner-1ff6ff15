@@ -89,6 +89,7 @@ CHARM_Extend(P, TID-list(P)):
 ];
 
 const Docs = () => {
+  useSEO({ title: "Documentation & API Reference", description: "Complete documentation for SmartMine data mining algorithms including Apriori, FP-Growth, ECLAT, K-Means. API reference, examples, and FAQ.", path: "/docs" });
   return (
     <div className="min-h-screen bg-background">
       <Navbar />

@@ -29,6 +29,7 @@ interface Category {
 }
 
 export default function Blog() {
+  useSEO({ title: "Data Mining Blog", description: "Articles on data mining algorithms, machine learning, and pattern discovery. Learn about Apriori, FP-Growth, ECLAT, clustering, and classification.", path: "/blog" });
   const [posts, setPosts] = useState<BlogPost[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);

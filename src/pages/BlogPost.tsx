@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { Calendar, Eye, ArrowLeft, User } from "lucide-react";
+import { useSEO } from "@/hooks/useSEO";
 
 interface Post {
   id: string;

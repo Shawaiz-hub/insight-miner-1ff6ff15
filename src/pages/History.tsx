@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { useSEO } from "@/hooks/useSEO";
 import { Navbar } from "@/components/layout/Navbar";
 import { OfflineIndicator } from "@/components/layout/OfflineIndicator";
 import { Footer } from "@/components/layout/Footer";

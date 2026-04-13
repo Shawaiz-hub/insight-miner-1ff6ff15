@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
+import { useSEO } from "@/hooks/useSEO";
 import { Navbar } from "@/components/layout/Navbar";
 import { OfflineIndicator } from "@/components/layout/OfflineIndicator";
 import { PageTransition } from "@/components/layout/PageTransition";

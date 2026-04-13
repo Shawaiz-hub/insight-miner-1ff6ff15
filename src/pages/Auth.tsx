@@ -17,6 +17,7 @@ const passwordSchema = z.string().min(6, "Password must be at least 6 characters
 const nameSchema = z.string().min(2, "Name must be at least 2 characters").optional();
 
 export default function Auth() {
+  useSEO({ title: "Sign In", description: "Sign in or create an account to use SmartMine data mining tools. Save your results, track history, and more.", path: "/auth" });
   const navigate = useNavigate();
   const { user, signIn, signUp, signInWithGoogle, signInWithApple, isLoading: authLoading } = useAuth();
   
