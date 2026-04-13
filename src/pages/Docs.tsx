@@ -1,5 +1,6 @@
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
+import { useSEO } from "@/hooks/useSEO";
 import { Layers, Network, Binary, Cpu, Workflow, Lock, Maximize, BookOpen, Code, FileText } from "lucide-react";
 import { FAQSection } from "@/components/home/FAQSection";
 
@@ -88,6 +89,7 @@ CHARM_Extend(P, TID-list(P)):
 ];
 
 const Docs = () => {
+  useSEO({ title: "Documentation & API Reference", description: "Complete documentation for SmartMine data mining algorithms including Apriori, FP-Growth, ECLAT, K-Means. API reference, examples, and FAQ.", path: "/docs" });
   return (
     <div className="min-h-screen bg-background">
       <Navbar />

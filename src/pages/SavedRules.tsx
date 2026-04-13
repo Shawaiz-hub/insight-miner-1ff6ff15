@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
+import { useSEO } from "@/hooks/useSEO";
 import { Navbar } from "@/components/layout/Navbar";
 import { OfflineIndicator } from "@/components/layout/OfflineIndicator";
 import { PageTransition } from "@/components/layout/PageTransition";
@@ -38,6 +39,7 @@ interface SavedRule {
 }
 
 const SavedRules = () => {
+  useSEO({ title: "Saved Rules", description: "View and manage your saved association rules from data mining analyses.", path: "/saved-rules" });
   const navigate = useNavigate();
   const [rules, setRules] = useState<SavedRule[]>([]);
   const [isLoading, setIsLoading] = useState(true);

@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { useSEO } from "@/hooks/useSEO";
 import { Navbar } from "@/components/layout/Navbar";
 import { OfflineIndicator } from "@/components/layout/OfflineIndicator";
 import { Footer } from "@/components/layout/Footer";
@@ -47,6 +48,7 @@ type SortField = "date" | "algorithm" | "execution_time";
 type SortDir = "asc" | "desc";
 
 export default function History() {
+  useSEO({ title: "Mining History", description: "View and manage your data mining analysis history. Re-run experiments, compare results, and track your discoveries.", path: "/history" });
   const { user, isLoading: authLoading } = useRequireAuth();
   const navigate = useNavigate();
   const [history, setHistory] = useState<MiningHistoryItem[]>([]);

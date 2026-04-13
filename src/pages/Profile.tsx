@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { useRequireAuth, useAuth } from "@/hooks/useAuth";
+import { useSEO } from "@/hooks/useSEO";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -23,6 +24,7 @@ interface Profile {
 }
 
 export default function ProfilePage() {
+  useSEO({ title: "Profile", description: "Manage your SmartMine account settings and profile information.", path: "/profile" });
   const { user, isLoading: authLoading } = useRequireAuth();
   const { signOut } = useAuth();
   const navigate = useNavigate();

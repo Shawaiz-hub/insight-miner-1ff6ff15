@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Navbar } from "@/components/layout/Navbar";
+import { useSEO } from "@/hooks/useSEO";
 import { Footer } from "@/components/layout/Footer";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -28,6 +29,7 @@ interface Category {
 }
 
 export default function Blog() {
+  useSEO({ title: "Data Mining Blog", description: "Articles on data mining algorithms, machine learning, and pattern discovery. Learn about Apriori, FP-Growth, ECLAT, clustering, and classification.", path: "/blog" });
   const [posts, setPosts] = useState<BlogPost[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);

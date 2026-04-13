@@ -1,7 +1,9 @@
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
+import { useSEO } from "@/hooks/useSEO";
 
 export default function Privacy() {
+  useSEO({ title: "Privacy Policy", description: "SmartMine privacy policy. Learn how we collect, use, and protect your data on our data mining platform.", path: "/privacy" });
   return (
     <div className="min-h-screen bg-background">
       <Navbar />

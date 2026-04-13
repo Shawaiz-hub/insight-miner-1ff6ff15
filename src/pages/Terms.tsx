@@ -1,7 +1,9 @@
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
+import { useSEO } from "@/hooks/useSEO";
 
 export default function Terms() {
+  useSEO({ title: "Terms of Service", description: "SmartMine terms of service. Read about the rules and guidelines for using our data mining platform.", path: "/terms" });
   return (
     <div className="min-h-screen bg-background">
       <Navbar />

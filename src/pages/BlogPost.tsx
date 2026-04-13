@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { Calendar, Eye, ArrowLeft, User } from "lucide-react";
+import { useSEO } from "@/hooks/useSEO";
 
 interface Post {
   id: string;
@@ -86,15 +87,13 @@ export default function BlogPost() {
     fetchPost();
   }, [slug]);
 
-  // SEO meta tags
-  useEffect(() => {
-    if (post) {
-      document.title = post.seo_title || post.title;
-      const metaDesc = document.querySelector('meta[name="description"]');
-      if (metaDesc) metaDesc.setAttribute("content", post.meta_description || post.excerpt || "");
-    }
-    return () => { document.title = "SmartMine"; };
-  }, [post]);
+  useSEO({
+    title: post?.seo_title || post?.title || "Blog Post",
+    description: post?.meta_description || post?.excerpt || "Read this article on SmartMine blog.",
+    path: `/blog/${slug}`,
+    image: post?.featured_image || undefined,
+    type: "article",
+  });
 
   if (loading) {
     return (

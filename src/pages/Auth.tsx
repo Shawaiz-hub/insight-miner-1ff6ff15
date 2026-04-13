@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { useSEO } from "@/hooks/useSEO";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,6 +17,7 @@ const passwordSchema = z.string().min(6, "Password must be at least 6 characters
 const nameSchema = z.string().min(2, "Name must be at least 2 characters").optional();
 
 export default function Auth() {
+  useSEO({ title: "Sign In", description: "Sign in or create an account to use SmartMine data mining tools. Save your results, track history, and more.", path: "/auth" });
   const navigate = useNavigate();
   const { user, signIn, signUp, signInWithGoogle, signInWithApple, isLoading: authLoading } = useAuth();
   

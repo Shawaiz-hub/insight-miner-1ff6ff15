@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Navbar } from "@/components/layout/Navbar";
+import { useSEO } from "@/hooks/useSEO";
 import { Footer } from "@/components/layout/Footer";
 import { HeroSection } from "@/components/home/HeroSection";
 import { StatsSection } from "@/components/home/StatsSection";
@@ -66,6 +67,7 @@ function CustomSection({ section }: { section: HomeSection }) {
 }
 
 const Index = () => {
+  useSEO({ title: "Advanced Data Mining Platform", description: "Discover patterns in your data with Apriori, FP-Growth, ECLAT, K-Means and more. Free online data mining tool with visualization and export.", path: "/" });
   const [sections, setSections] = useState<HomeSection[]>(defaultSections);
 
   useEffect(() => {

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Navbar } from "@/components/layout/Navbar";
+import { useSEO } from "@/hooks/useSEO";
 import { useOfflineCache } from "@/hooks/useOfflineCache";
 import { DataUpload } from "@/components/dashboard/DataUpload";
 import { AlgorithmSelector } from "@/components/dashboard/AlgorithmSelector";
@@ -55,6 +56,7 @@ export interface FrequentItemset {
 }
 
 const Dashboard = () => {
+  useSEO({ title: "Data Mining Dashboard", description: "Run Apriori, FP-Growth, ECLAT, K-Means and classification algorithms on your datasets. Upload CSV, configure parameters, and visualize results.", path: "/dashboard" });
   const [searchParams, setSearchParams] = useSearchParams();
   const [step, setStep] = useState<MiningStep>("upload");
   const [miningTask, setMiningTask] = useState<MiningTask>("association");
