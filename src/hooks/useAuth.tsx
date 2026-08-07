@@ -68,9 +68,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { error: error ? new Error(error.message) : null };
   }, []);
 
-  const signInWithGoogle = useCallback(async () => {
+  const oauthSignIn = useCallback(async (provider: "google" | "apple") => {
     try {
-      const result = await lovable.auth.signInWithOAuth("google", {
+      const host = window.location.hostname;
+      const isLovableHost =
+        host === "localhost" ||
+        host === "127.0.0.1" ||
+        host.endsWith(".lovable.app") ||
+        host.endsWith(".lovableproject.com") ||
+        host.endsWith(".lovable.dev");
+
+      // The Lovable managed OAuth broker (/~oauth/*) is only proxied on Lovable
+      // domains. On external hosts (e.g. Vercel) that path 404s, so fall back
+      // to the backend's own OAuth endpoint.
+      if (!isLovableHost) {
+        const { error } = await supabase.auth.signInWithOAuth({
+          provider,
+          options: {
+            redirectTo: `${window.location.origin}/dashboard`,
+            queryParams: provider === "google" ? { prompt: "select_account" } : undefined,
+          },
+        });
+        return { error: error ? new Error(error.message) : null };
+      }
+
+      const result = await lovable.auth.signInWithOAuth(provider, {
         redirect_uri: window.location.origin,
       });
       if (result.error) {
@@ -78,23 +100,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       return { error: null };
     } catch (err) {
-      return { error: err instanceof Error ? err : new Error("Google sign-in failed") };
+      return { error: err instanceof Error ? err : new Error(`${provider} sign-in failed`) };
     }
   }, []);
 
-  const signInWithApple = useCallback(async () => {
-    try {
-      const result = await lovable.auth.signInWithOAuth("apple", {
-        redirect_uri: window.location.origin,
-      });
-      if (result.error) {
-        return { error: result.error instanceof Error ? result.error : new Error(String(result.error)) };
-      }
-      return { error: null };
-    } catch (err) {
-      return { error: err instanceof Error ? err : new Error("Apple sign-in failed") };
-    }
-  }, []);
+  const signInWithGoogle = useCallback(() => oauthSignIn("google"), [oauthSignIn]);
+  const signInWithApple = useCallback(() => oauthSignIn("apple"), [oauthSignIn]);
 
   const signOut = useCallback(async () => {
     await supabase.auth.signOut();
