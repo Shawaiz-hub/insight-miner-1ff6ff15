@@ -160,6 +160,69 @@ export type Database = {
         }
         Relationships: []
       }
+      forecasts: {
+        Row: {
+          accuracy: number | null
+          confidence_interval: number
+          created_at: string
+          dataset_name: string
+          forecast_horizon: number
+          frequency: string
+          id: string
+          mae: number | null
+          mape: number | null
+          model: string
+          parameters: Json
+          r2_score: number | null
+          results: Json
+          rmse: number | null
+          status: string
+          training_time_ms: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          accuracy?: number | null
+          confidence_interval?: number
+          created_at?: string
+          dataset_name: string
+          forecast_horizon?: number
+          frequency?: string
+          id?: string
+          mae?: number | null
+          mape?: number | null
+          model: string
+          parameters?: Json
+          r2_score?: number | null
+          results?: Json
+          rmse?: number | null
+          status?: string
+          training_time_ms?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          accuracy?: number | null
+          confidence_interval?: number
+          created_at?: string
+          dataset_name?: string
+          forecast_horizon?: number
+          frequency?: string
+          id?: string
+          mae?: number | null
+          mape?: number | null
+          model?: string
+          parameters?: Json
+          r2_score?: number | null
+          results?: Json
+          rmse?: number | null
+          status?: string
+          training_time_ms?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       mining_history: {
         Row: {
           algorithm: string
