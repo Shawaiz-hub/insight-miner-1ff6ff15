@@ -1,12 +1,12 @@
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, History, User, Bookmark, FileText } from "lucide-react";
+import { LayoutDashboard, History, User, TrendingUp, FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 const navItems = [
   { path: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { path: "/history", label: "History", icon: History },
-  { path: "/saved-rules", label: "Saved", icon: Bookmark },
+  { path: "/forecasting", label: "Forecast", icon: TrendingUp },
   { path: "/docs", label: "Docs", icon: FileText },
   { path: "/profile", label: "Profile", icon: User },
 ];
@@ -16,7 +16,7 @@ export function BottomNav() {
   const isMobile = useIsMobile();
 
   // Only show on mobile and when user is on an app page (not landing)
-  const appPaths = ["/dashboard", "/history", "/saved-rules", "/profile", "/docs"];
+  const appPaths = ["/dashboard", "/history", "/saved-rules", "/profile", "/docs", "/forecasting", "/forecast-history"];
   const isAppPage = appPaths.some(path => location.pathname.startsWith(path));
 
   if (!isMobile || !isAppPage) return null;

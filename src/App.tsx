@@ -13,6 +13,8 @@ import { offlineDB } from "@/lib/offlineDB";
 
 const Index = lazy(() => import("./pages/Index"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
+const Forecasting = lazy(() => import("./pages/Forecasting"));
+const ForecastHistory = lazy(() => import("./pages/ForecastHistory"));
 const Docs = lazy(() => import("./pages/Docs"));
 const Auth = lazy(() => import("./pages/Auth"));
 const Privacy = lazy(() => import("./pages/Privacy"));
@@ -50,6 +52,8 @@ function AnimatedRoutes() {
           <Route path="/" element={<Index />} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/forecasting" element={<Forecasting />} />
+          <Route path="/forecast-history" element={<ForecastHistory />} />
           <Route path="/docs" element={<Docs />} />
           <Route path="/history" element={<History />} />
           <Route path="/profile" element={<Profile />} />
