@@ -41,6 +41,7 @@ export default function Forecasting() {
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [runId, setRunId] = useState<string | null>(null);
 
   // auto-detect columns after upload
   useEffect(() => {
@@ -140,7 +141,7 @@ export default function Forecasting() {
       r2_score: result.metrics.r2,
       training_time_ms: result.trainingTimeMs,
       status: "completed",
-      parameters: { mapping, cleaning, settings } as never,
+      parameters: { mapping, cleaning, settings, runId, engine: "python" } as never,
       results: { rows: result.rows.slice(0, 500), scores: result.scores } as never,
     });
     setSaving(false);
