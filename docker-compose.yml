@@ -41,6 +41,31 @@ services:
       retries: 3
       start_period: 10s
 
+  # FastAPI Forecasting Microservice (real ML models)
+  forecast:
+    build:
+      context: ./backend/forecast
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    volumes:
+      - forecast-uploads:/app/uploads
+      - forecast-models:/app/models
+      - forecast-runs:/app/runs
+    environment:
+      - PYTHONUNBUFFERED=1
+      - PORT=8000
+      - CORS_ORIGINS=*
+    networks:
+      - smartmine-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 90s
+
 networks:
   smartmine-network:
     driver: bridge
@@ -49,3 +74,6 @@ volumes:
   backend-uploads:
   backend-processed:
   backend-spmf:
+  forecast-uploads:
+  forecast-models:
+  forecast-runs:
