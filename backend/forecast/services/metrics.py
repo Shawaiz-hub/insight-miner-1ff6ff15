@@ -11,7 +11,7 @@ def z_for(confidence: float) -> float:
 
 
 def _clean(actual, predicted):
-    a = np.asarray(actual, dtype float) if False else np.asarray(actual, dtype=float)
+    a = np.asarray(actual, dtype=float)
     p = np.asarray(predicted, dtype=float)
     n = min(len(a), len(p))
     a, p = a[:n], p[:n]
