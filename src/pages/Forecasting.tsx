@@ -73,24 +73,51 @@ export default function Forecasting() {
   }, [series]);
 
   const handleTrain = async () => {
+    if (!dataset) return;
     setError(null);
     setSaved(false);
     setResult(null);
+    setRunId(null);
+    setStage(0);
+
+    // advance the staged indicator while the Python service trains
+    let step = 0;
+    const ticker = window.setInterval(() => {
+      step = Math.min(step + 1, 3);
+      setStage(step);
+    }, 900);
+
     try {
-      for (let i = 0; i < 4; i++) {
-        setStage(i);
-        await new Promise((r) => setTimeout(r, 320));
-      }
-      const out = runForecast(series, {
+      const res = await trainForecast({
+        rows: dataset.rows,
+        dateColumn: mapping.dateCol,
+        targetColumn: mapping.targetCol,
+        categoryColumn: mapping.categoryCol || undefined,
+        category: mapping.category,
+        regionColumn: mapping.regionCol || undefined,
+        region: mapping.region,
+        models: settings.models,
         horizon: settings.horizon,
         frequency: settings.frequency,
         confidence: settings.confidence,
-        models: settings.models,
+        cleaning,
+        datasetName: dataset.name,
+        user: user?.email ?? user?.id,
       });
-      setResult(out);
+      window.clearInterval(ticker);
+      setSummary(res.preprocessing ?? null);
+      setRunId(res.runId ?? null);
+      setResult(toForecastResult(res));
       setStage(4);
+      if (res.failures?.length) {
+        toast({
+          title: "Some models could not be trained",
+          description: res.failures.map((f) => `${f.label}: ${f.error}`).join(" · ").slice(0, 300),
+        });
+      }
       setTimeout(() => setStage(-1), 800);
     } catch (e) {
+      window.clearInterval(ticker);
       setStage(-1);
       setError(e instanceof Error ? e.message : "Forecast failed.");
     }
