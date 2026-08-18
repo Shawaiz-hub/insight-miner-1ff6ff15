@@ -39,6 +39,26 @@ export const API_ENDPOINTS = {
 } as const;
 
 /**
+ * Base URL for the Python FastAPI forecasting microservice (backend/forecast).
+ * Local/Docker default: http://localhost:8000
+ */
+export const FORECAST_API_BASE = (
+  import.meta.env.VITE_FORECAST_API_URL ||
+  (import.meta.env.PROD
+    ? 'https://smartmine-forecast-production.up.railway.app'
+    : 'http://localhost:8000')
+).replace(/\/+$/, '');
+
+export const FORECAST_ENDPOINTS = {
+  health: `${FORECAST_API_BASE}/health`,
+  models: `${FORECAST_API_BASE}/forecast/models`,
+  upload: `${FORECAST_API_BASE}/forecast/upload`,
+  train: `${FORECAST_API_BASE}/forecast/train`,
+  runs: `${FORECAST_API_BASE}/forecast/runs`,
+  run: (runId: string) => `${FORECAST_API_BASE}/forecast/runs/${runId}`,
+} as const;
+
+/**
  * Helper function to make API calls with error handling
  */
 export async function apiCall<T>(

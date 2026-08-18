@@ -1,12 +1,10 @@
 /**
- * SmartMine Forecasting Engine
- * ----------------------------
- * Client-side time-series forecasting used as the primary engine in the browser
- * and as a fallback when the Python microservice is unavailable.
- *
- * Implemented estimators: linear / polynomial regression, simple & double
- * exponential smoothing, Holt-Winters (additive seasonality), Theta method,
- * moving-average (ARIMA-style) and lag-feature ensembles (tree-style regressors).
+ * SmartMine Forecasting — shared types and dataset helpers
+ * -------------------------------------------------------
+ * File parsing, column detection, period helpers and local series building used
+ * for previews and mapping only. All forecasting (Linear, Polynomial, ARIMA,
+ * SARIMA, Holt-Winters, Prophet, Random Forest, XGBoost, LSTM, GRU) is executed
+ * by the Python FastAPI microservice in backend/forecast.
  */
 
 import * as XLSX from "xlsx";
@@ -102,16 +100,16 @@ export interface ForecastResult {
 /* ------------------------------------------------------------------ models */
 
 export const FORECAST_MODELS: { id: string; label: string; native: boolean; description: string }[] = [
-  { id: "linear", label: "Linear Regression", native: true, description: "Least-squares trend line" },
-  { id: "polynomial", label: "Polynomial Regression", native: true, description: "Degree-2 curved trend" },
-  { id: "arima", label: "ARIMA", native: false, description: "Differenced auto-regressive moving average" },
-  { id: "sarima", label: "SARIMA", native: false, description: "Seasonal ARIMA" },
-  { id: "holt_winters", label: "Holt-Winters Exponential Smoothing", native: true, description: "Trend + seasonality smoothing" },
-  { id: "prophet", label: "Facebook Prophet", native: false, description: "Additive trend + seasonality model" },
-  { id: "xgboost", label: "XGBoost Regressor", native: false, description: "Gradient-boosted lag features" },
-  { id: "random_forest", label: "Random Forest Regressor", native: false, description: "Bagged lag-feature regressor" },
-  { id: "lstm", label: "LSTM Neural Network", native: false, description: "Recurrent sequence model" },
-  { id: "gru", label: "GRU Neural Network", native: false, description: "Gated recurrent sequence model" },
+  { id: "linear", label: "Linear Regression", native: true, description: "scikit-learn least-squares trend" },
+  { id: "polynomial", label: "Polynomial Regression", native: true, description: "scikit-learn PolynomialFeatures" },
+  { id: "arima", label: "ARIMA", native: true, description: "statsmodels ARIMA with AIC order search" },
+  { id: "sarima", label: "SARIMA", native: true, description: "statsmodels seasonal SARIMAX" },
+  { id: "holt_winters", label: "Holt-Winters Exponential Smoothing", native: true, description: "statsmodels ExponentialSmoothing" },
+  { id: "prophet", label: "Facebook Prophet", native: true, description: "Official Prophet additive model" },
+  { id: "xgboost", label: "XGBoost Regressor", native: true, description: "XGBRegressor on lag features" },
+  { id: "random_forest", label: "Random Forest Regressor", native: true, description: "RandomForestRegressor on lag features" },
+  { id: "lstm", label: "LSTM Neural Network", native: true, description: "TensorFlow/Keras LSTM" },
+  { id: "gru", label: "GRU Neural Network", native: true, description: "TensorFlow/Keras GRU" },
 ];
 
 export const HORIZON_PRESETS = [
@@ -378,267 +376,7 @@ export function buildSeries(
   return { series, summary };
 }
 
-/* ---------------------------------------------------------------- estimators */
-
-type Fitted = { fitted: number[]; predict: (steps: number) => number[] };
-
-const mean = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / (xs.length || 1);
-
-function polyFit(y: number[], degree: number): Fitted {
-  const n = y.length;
-  const X: number[][] = [];
-  for (let i = 0; i < n; i++) {
-    const row: number[] = [];
-    for (let d = 0; d <= degree; d++) row.push(Math.pow(i, d));
-    X.push(row);
-  }
-  // normal equations with Gaussian elimination
-  const m = degree + 1;
-  const A: number[][] = Array.from({ length: m }, () => Array(m + 1).fill(0));
-  for (let i = 0; i < m; i++) {
-    for (let j = 0; j < m; j++) A[i][j] = X.reduce((s, row) => s + row[i] * row[j], 0);
-    A[i][m] = X.reduce((s, row, k) => s + row[i] * y[k], 0);
-  }
-  for (let i = 0; i < m; i++) {
-    let pivot = i;
-    for (let r = i + 1; r < m; r++) if (Math.abs(A[r][i]) > Math.abs(A[pivot][i])) pivot = r;
-    [A[i], A[pivot]] = [A[pivot], A[i]];
-    const div = A[i][i] || 1e-9;
-    for (let j = i; j <= m; j++) A[i][j] /= div;
-    for (let r = 0; r < m; r++) {
-      if (r === i) continue;
-      const f = A[r][i];
-      for (let j = i; j <= m; j++) A[r][j] -= f * A[i][j];
-    }
-  }
-  const coef = A.map((row) => row[m]);
-  const evalAt = (i: number) => coef.reduce((s, c, d) => s + c * Math.pow(i, d), 0);
-  return {
-    fitted: y.map((_, i) => evalAt(i)),
-    predict: (steps) => Array.from({ length: steps }, (_, k) => evalAt(n + k)),
-  };
-}
-
-function holtWinters(y: number[], season: number, useSeason: boolean): Fitted {
-  const alpha = 0.5, beta = 0.15, gamma = 0.3;
-  const m = useSeason && season > 1 && y.length >= season * 2 ? season : 0;
-  let level = y[0];
-  let trend = y.length > 1 ? y[1] - y[0] : 0;
-  const seasonal: number[] = m ? Array.from({ length: m }, (_, i) => y[i] - mean(y.slice(0, m))) : [];
-  const fitted: number[] = [];
-  for (let i = 0; i < y.length; i++) {
-    const s = m ? seasonal[i % m] : 0;
-    fitted.push(level + trend + s);
-    const prevLevel = level;
-    const target = m ? y[i] - s : y[i];
-    level = alpha * target + (1 - alpha) * (level + trend);
-    trend = beta * (level - prevLevel) + (1 - beta) * trend;
-    if (m) seasonal[i % m] = gamma * (y[i] - level) + (1 - gamma) * s;
-  }
-  return {
-    fitted,
-    predict: (steps) =>
-      Array.from({ length: steps }, (_, k) => level + trend * (k + 1) + (m ? seasonal[(y.length + k) % m] : 0)),
-  };
-}
-
-function movingAverageModel(y: number[], window: number, drift: boolean): Fitted {
-  const fitted = y.map((_, i) => {
-    const slice = y.slice(Math.max(0, i - window), i);
-    return slice.length ? mean(slice) : y[i];
-  });
-  const tail = y.slice(-window);
-  const base = mean(tail);
-  const slope = drift && y.length > 1 ? (y[y.length - 1] - y[0]) / (y.length - 1) : 0;
-  return { fitted, predict: (steps) => Array.from({ length: steps }, (_, k) => base + slope * (k + 1)) };
-}
-
-function lagEnsemble(y: number[], lags: number, season: number): Fitted {
-  // simple additive ensemble: lag-average + linear trend (stand-in for tree regressors)
-  const lin = polyFit(y, 1);
-  const fitted = y.map((v, i) => {
-    const window = y.slice(Math.max(0, i - lags), i);
-    const lagPart = window.length ? mean(window) : v;
-    return 0.6 * lagPart + 0.4 * lin.fitted[i];
-  });
-  const linFuture = lin.predict(100);
-  let recent = y.slice(-lags);
-  return {
-    fitted,
-    predict: (steps) => {
-      const out: number[] = [];
-      for (let k = 0; k < steps; k++) {
-        const seasonalRef = season > 1 && y.length >= season ? y[y.length - season + (k % season)] ?? mean(recent) : mean(recent);
-        const value = 0.45 * mean(recent) + 0.35 * linFuture[k] + 0.2 * seasonalRef;
-        out.push(value);
-        recent = [...recent.slice(1), value];
-      }
-      return out;
-    },
-  };
-}
-
-function seasonLength(freq: Frequency): number {
-  switch (freq) {
-    case "daily": return 7;
-    case "weekly": return 52;
-    case "monthly": return 12;
-    case "quarterly": return 4;
-    default: return 1;
-  }
-}
-
-function fitModel(id: string, y: number[], freq: Frequency): Fitted {
-  const s = seasonLength(freq);
-  switch (id) {
-    case "linear": return polyFit(y, 1);
-    case "polynomial": return polyFit(y, Math.min(2, Math.max(1, y.length - 2)));
-    case "arima": return movingAverageModel(y, Math.min(5, Math.max(2, Math.floor(y.length / 4))), true);
-    case "sarima": return holtWinters(y, s, true);
-    case "holt_winters": return holtWinters(y, s, true);
-    case "prophet": return holtWinters(y, s, true);
-    case "xgboost": return lagEnsemble(y, Math.min(6, Math.max(2, Math.floor(y.length / 5))), s);
-    case "random_forest": return lagEnsemble(y, Math.min(4, Math.max(2, Math.floor(y.length / 6))), s);
-    case "lstm": return lagEnsemble(y, Math.min(8, Math.max(3, Math.floor(y.length / 4))), s);
-    case "gru": return lagEnsemble(y, Math.min(6, Math.max(3, Math.floor(y.length / 4))), s);
-    default: return polyFit(y, 1);
-  }
-}
-
-function metricsOf(actual: number[], predicted: number[]) {
-  const n = Math.min(actual.length, predicted.length);
-  let se = 0, ae = 0, ape = 0, apeN = 0;
-  for (let i = 0; i < n; i++) {
-    const err = actual[i] - predicted[i];
-    se += err * err;
-    ae += Math.abs(err);
-    if (actual[i] !== 0) { ape += Math.abs(err / actual[i]); apeN++; }
-  }
-  const rmse = Math.sqrt(se / (n || 1));
-  const mae = ae / (n || 1);
-  const mape = apeN ? (ape / apeN) * 100 : 0;
-  const mu = mean(actual.slice(0, n));
-  const ssTot = actual.slice(0, n).reduce((s, v) => s + Math.pow(v - mu, 2), 0);
-  const r2 = ssTot > 0 ? 1 - se / ssTot : 0;
-  const accuracy = Math.max(0, Math.min(100, 100 - mape));
-  return { rmse, mae, mape, r2, accuracy };
-}
-
-const Z: Record<number, number> = { 80: 1.282, 90: 1.645, 95: 1.96, 99: 2.576 };
-
 /* ------------------------------------------------------------------ runner */
+// Model training, metrics and confidence intervals are produced exclusively by the
+// Python FastAPI forecasting microservice — see src/lib/forecastApi.ts.
 
-export function runForecast(series: SeriesPoint[], opts: ForecastOptions): ForecastResult {
-  if (series.length < 5) throw new Error("At least 5 data points are required to build a forecast.");
-  const started = performance.now();
-  const y = series.map((p) => p.value);
-  const freq = opts.frequency;
-  const candidates = opts.models.length ? opts.models : ["linear", "holt_winters", "arima"];
-
-  const holdout = Math.max(2, Math.min(Math.floor(y.length * 0.2), Math.floor(y.length / 3)));
-  const train = y.slice(0, y.length - holdout);
-  const test = y.slice(y.length - holdout);
-
-  const scores: ModelScore[] = candidates.map((id) => {
-    let m;
-    try {
-      const fit = fitModel(id, train, freq);
-      m = metricsOf(test, fit.predict(holdout));
-    } catch {
-      m = { rmse: Infinity, mae: Infinity, mape: 100, r2: 0, accuracy: 0 };
-    }
-    return {
-      model: id,
-      label: modelLabel(id),
-      ...m,
-      approximated: !(FORECAST_MODELS.find((mm) => mm.id === id)?.native ?? true),
-    };
-  });
-
-  const best = [...scores].sort((a, b) => a.rmse - b.rmse)[0];
-  const finalFit = fitModel(best.model, y, freq);
-  const inSample = metricsOf(y, finalFit.fitted);
-
-  const periods = horizonPeriods(opts.horizon, freq);
-  const futureDates = nextPeriods(series[series.length - 1].date, freq, periods);
-  const futureValues = finalFit.predict(periods);
-
-  const residualsArr = y.map((v, i) => v - finalFit.fitted[i]);
-  const residStd = Math.sqrt(mean(residualsArr.map((r) => r * r)));
-  const z = Z[opts.confidence] ?? 1.96;
-
-  const historyRows: ForecastRow[] = series.map((p, i) => ({
-    date: p.date,
-    actual: p.value,
-    forecast: finalFit.fitted[i],
-    lower: finalFit.fitted[i] - z * residStd,
-    upper: finalFit.fitted[i] + z * residStd,
-  }));
-
-  const forecastRows: ForecastRow[] = futureDates.map((date, k) => {
-    const spread = z * residStd * Math.sqrt(1 + k / Math.max(1, periods));
-    return { date, actual: null, forecast: futureValues[k], lower: futureValues[k] - spread, upper: futureValues[k] + spread };
-  });
-
-  // seasonal decomposition
-  const s = seasonLength(freq);
-  const trendSeries = y.map((_, i) => {
-    const half = Math.floor(s / 2) || 1;
-    const slice = y.slice(Math.max(0, i - half), Math.min(y.length, i + half + 1));
-    return slice.length ? mean(slice) : null;
-  });
-  const seasonalAvg: number[] = Array.from({ length: Math.max(1, s) }, (_, k) => {
-    const vals = y.filter((_, i) => i % Math.max(1, s) === k).map((v, i2) => v - (trendSeries[i2 * Math.max(1, s) + k] ?? mean(y)));
-    return vals.length ? mean(vals) : 0;
-  });
-  const decomposition = series.map((p, i) => {
-    const trend = trendSeries[i];
-    const seasonal = seasonalAvg[i % Math.max(1, s)] ?? 0;
-    return { date: p.date, observed: p.value, trend, seasonal, residual: trend === null ? null : p.value - trend - seasonal };
-  });
-
-  // error histogram
-  const buckets = 10;
-  const minR = Math.min(...residualsArr);
-  const maxR = Math.max(...residualsArr);
-  const width = (maxR - minR) / buckets || 1;
-  const errorHistogram = Array.from({ length: buckets }, (_, i) => {
-    const lo = minR + i * width;
-    const hi = lo + width;
-    return {
-      bucket: `${lo.toFixed(1)}`,
-      count: residualsArr.filter((r) => r >= lo && (i === buckets - 1 ? r <= hi : r < hi)).length,
-    };
-  });
-
-  // monthly aggregation of the forecast
-  const monthlyMap = new Map<string, number>();
-  for (const row of forecastRows) {
-    const key = row.date.length >= 7 ? row.date.slice(0, 7) : row.date;
-    monthlyMap.set(key, (monthlyMap.get(key) ?? 0) + (row.forecast ?? 0));
-  }
-
-  return {
-    bestModel: best.model,
-    bestModelLabel: best.label,
-    approximated: best.approximated,
-    metrics: {
-      rmse: best.rmse === Infinity ? inSample.rmse : best.rmse,
-      mae: best.mae === Infinity ? inSample.mae : best.mae,
-      mape: best.mape,
-      r2: best.r2,
-      accuracy: best.accuracy,
-    },
-    trainingTimeMs: Math.round(performance.now() - started),
-    rows: [...historyRows, ...forecastRows],
-    history: series,
-    forecast: forecastRows,
-    residuals: series.map((p, i) => ({ date: p.date, residual: residualsArr[i] })),
-    errorHistogram,
-    decomposition,
-    trend: series.map((p, i) => ({ date: p.date, trend: trendSeries[i] ?? p.value })),
-    monthly: Array.from(monthlyMap.entries()).map(([period, value]) => ({ period, value })),
-    scores: [...scores].sort((a, b) => a.rmse - b.rmse),
-    engine: "browser",
-  };
-}
