@@ -14,9 +14,10 @@ import { ForecastUpload } from "@/components/forecasting/ForecastUpload";
 import { ForecastConfig, type Mapping, type Settings } from "@/components/forecasting/ForecastConfig";
 import { ForecastResults } from "@/components/forecasting/ForecastResults";
 import {
-  buildSeries, runForecast, modelLabel,
+  buildSeries, modelLabel,
   type CleaningOptions, type CleaningSummary, type ForecastResult, type ParsedDataset,
 } from "@/lib/forecastEngine";
+import { toForecastResult, trainForecast } from "@/lib/forecastApi";
 
 const STAGES = ["Preparing Dataset…", "Cleaning Data…", "Training Model…", "Generating Forecast…", "Complete"];
 
