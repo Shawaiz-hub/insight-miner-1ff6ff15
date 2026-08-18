@@ -100,16 +100,16 @@ export interface ForecastResult {
 /* ------------------------------------------------------------------ models */
 
 export const FORECAST_MODELS: { id: string; label: string; native: boolean; description: string }[] = [
-  { id: "linear", label: "Linear Regression", native: true, description: "Least-squares trend line" },
-  { id: "polynomial", label: "Polynomial Regression", native: true, description: "Degree-2 curved trend" },
-  { id: "arima", label: "ARIMA", native: false, description: "Differenced auto-regressive moving average" },
-  { id: "sarima", label: "SARIMA", native: false, description: "Seasonal ARIMA" },
-  { id: "holt_winters", label: "Holt-Winters Exponential Smoothing", native: true, description: "Trend + seasonality smoothing" },
-  { id: "prophet", label: "Facebook Prophet", native: false, description: "Additive trend + seasonality model" },
-  { id: "xgboost", label: "XGBoost Regressor", native: false, description: "Gradient-boosted lag features" },
-  { id: "random_forest", label: "Random Forest Regressor", native: false, description: "Bagged lag-feature regressor" },
-  { id: "lstm", label: "LSTM Neural Network", native: false, description: "Recurrent sequence model" },
-  { id: "gru", label: "GRU Neural Network", native: false, description: "Gated recurrent sequence model" },
+  { id: "linear", label: "Linear Regression", native: true, description: "scikit-learn least-squares trend" },
+  { id: "polynomial", label: "Polynomial Regression", native: true, description: "scikit-learn PolynomialFeatures" },
+  { id: "arima", label: "ARIMA", native: true, description: "statsmodels ARIMA with AIC order search" },
+  { id: "sarima", label: "SARIMA", native: true, description: "statsmodels seasonal SARIMAX" },
+  { id: "holt_winters", label: "Holt-Winters Exponential Smoothing", native: true, description: "statsmodels ExponentialSmoothing" },
+  { id: "prophet", label: "Facebook Prophet", native: true, description: "Official Prophet additive model" },
+  { id: "xgboost", label: "XGBoost Regressor", native: true, description: "XGBRegressor on lag features" },
+  { id: "random_forest", label: "Random Forest Regressor", native: true, description: "RandomForestRegressor on lag features" },
+  { id: "lstm", label: "LSTM Neural Network", native: true, description: "TensorFlow/Keras LSTM" },
+  { id: "gru", label: "GRU Neural Network", native: true, description: "TensorFlow/Keras GRU" },
 ];
 
 export const HORIZON_PRESETS = [
