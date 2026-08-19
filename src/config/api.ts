@@ -8,7 +8,7 @@
  */
 export const API_BASE = import.meta.env.VITE_API_BASE_URL || 
   (import.meta.env.PROD 
-    ? 'https://backend-insight-miner-production.up.railway.app/'  // Update this with your PythonAnywhere URL
+    ? 'https://datamining-backend-7474658865580035.aws.databricksapps.com/'  // Update this with your PythonAnywhere URL
     : 'http://localhost:5000');
 
 /**
