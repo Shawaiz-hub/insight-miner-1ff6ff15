@@ -24,7 +24,8 @@ import re
 import unicodedata
 import threading
 from collections import defaultdict
-from flask import Flask, request, jsonify
+import logging
+from flask import Flask, g, request, jsonify
 from flask_cors import CORS
 import pandas as pd
 import numpy as np
@@ -43,7 +44,24 @@ from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_sc
 from sklearn.cluster import KMeans, DBSCAN
 
 app = Flask(__name__)
-CORS(app, origins=["*"])
+
+# ---------------------------------------------------------------- logging
+logging.basicConfig(
+    level=getattr(logging, os.environ.get("LOG_LEVEL", "INFO").upper(), logging.INFO),
+    format="%(asctime)s %(levelname)s %(name)s %(message)s",
+)
+logger = logging.getLogger("smartmine.mining")
+
+# ------------------------------------------------------------------- CORS
+_frontend = os.environ.get("FRONTEND_URL", "")
+_extra = os.environ.get("CORS_ORIGINS", "")
+_origins = [o.strip() for o in f"{_frontend},{_extra}".split(",") if o.strip()]
+if not _origins:
+    _origins = ["http://localhost:5173", "http://localhost:8080", "http://localhost:3000"]
+CORS(app, origins=_origins, supports_credentials=False)
+
+# Reject oversized uploads before they are buffered in memory.
+app.config["MAX_CONTENT_LENGTH"] = int(os.environ.get("MAX_UPLOAD_MB", "100")) * 1024 * 1024
 
 # Directories
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -55,11 +73,47 @@ SPMF_FOLDER = os.path.join(BASE_DIR, 'spmf')
 for folder in [UPLOAD_FOLDER, PROCESSED_FOLDER, SPMF_FOLDER]:
     os.makedirs(folder, exist_ok=True)
 
-TRANSACTIONS_FILE = os.path.join(PROCESSED_FOLDER, 'transactions.csv')
-SPMF_INPUT_FILE = os.path.join(PROCESSED_FOLDER, 'spmf_input.txt')
+# =============================================================================
+# PER-USER SESSION ISOLATION
+# =============================================================================
+# Datasets and profiles are stored per authenticated user, never globally, so
+# one user's upload can never be read or overwritten by another user.
 
-# Global dataset profiling cache
-dataset_profile = {}
+import security  # noqa: E402
+
+security.install(app)
+
+
+class _SessionPath(os.PathLike):
+    """Path that resolves to the current user's private workspace file."""
+
+    def __init__(self, name: str):
+        self.name = name
+
+    def __fspath__(self) -> str:
+        return os.path.join(security.session_dir(PROCESSED_FOLDER), self.name)
+
+    def __str__(self) -> str:  # pandas/str() consumers
+        return self.__fspath__()
+
+    def __repr__(self) -> str:
+        return f"<SessionPath {self.name}>"
+
+
+TRANSACTIONS_FILE = _SessionPath('transactions.csv')
+SPMF_INPUT_FILE = _SessionPath('spmf_input.txt')
+
+# Per-user dataset profiling cache (keyed by workspace id, not global state)
+_dataset_profiles: dict = {}
+
+
+def get_profile() -> dict:
+    return _dataset_profiles.get(security.workspace_id(), {})
+
+
+def set_profile(profile: dict) -> dict:
+    _dataset_profiles[security.workspace_id()] = profile or {}
+    return _dataset_profiles[security.workspace_id()]
 
 # =============================================================================
 # ADVANCED PREPROCESSING MODULE
@@ -1965,7 +2019,6 @@ def upload_dataset():
     """
     Upload and process a dataset with advanced preprocessing.
     """
-    global dataset_profile
     
     if 'file' not in request.files:
         return jsonify({'error': 'No file provided'}), 400
@@ -2039,7 +2092,7 @@ def upload_dataset():
         
         # Profile the dataset
         profile = profile_dataset(transactions)
-        dataset_profile = profile
+        set_profile(profile)
         
         # Get statistics
         all_items = set()
@@ -2068,7 +2121,6 @@ def preprocess_dataset():
     """
     Apply advanced preprocessing options to the uploaded dataset.
     """
-    global dataset_profile
     
     try:
         transactions = load_transactions()
@@ -2085,7 +2137,7 @@ def preprocess_dataset():
         processed_df.to_csv(TRANSACTIONS_FILE, index=False)
         
         # Update profile
-        dataset_profile = profile_dataset(processed)
+        set_profile(profile_dataset(processed))
         
         all_items = set()
         for t in processed:
@@ -2099,7 +2151,7 @@ def preprocess_dataset():
                 'unique_items': len(all_items),
                 'avg_items_per_transaction': round(sum(len(t) for t in processed) / len(processed), 2)
             },
-            'profile': dataset_profile
+            'profile': get_profile()
         }))
     
     except FileNotFoundError as e:
@@ -2113,21 +2165,20 @@ def recommend_algorithm_endpoint():
     """
     Get algorithm recommendation based on dataset characteristics.
     """
-    global dataset_profile
     
     try:
         data = request.get_json() or {}
         min_support = float(data.get('min_support', 0.1))
         
-        if not dataset_profile:
+        if not get_profile():
             transactions = load_transactions()
-            dataset_profile = profile_dataset(transactions)
+            set_profile(profile_dataset(transactions))
         
-        recommendation = recommend_algorithm(dataset_profile, min_support)
+        recommendation = recommend_algorithm(get_profile(), min_support)
         
         return jsonify(convert_numpy_types({
             'success': True,
-            'profile': dataset_profile,
+            'profile': get_profile(),
             'recommendation': recommendation
         }))
     
@@ -2249,13 +2300,12 @@ def mine_patterns():
 @app.route('/api/dataset/info', methods=['GET'])
 def get_dataset_info():
     """Get information about the current dataset with profiling."""
-    global dataset_profile
     
     try:
         transactions = load_transactions()
         
-        if not dataset_profile:
-            dataset_profile = profile_dataset(transactions)
+        if not get_profile():
+            set_profile(profile_dataset(transactions))
         
         item_counts = defaultdict(int)
         for t in transactions:
@@ -2269,10 +2319,10 @@ def get_dataset_info():
             'stats': {
                 'transactions': len(transactions),
                 'unique_items': len(item_counts),
-                'avg_items_per_transaction': dataset_profile.get('avg_transaction_length', 0),
+                'avg_items_per_transaction': get_profile().get('avg_transaction_length', 0),
                 'top_items': [{'item': item, 'count': int(count)} for item, count in top_items]
             },
-            'profile': dataset_profile
+            'profile': get_profile()
         }))
     
     except FileNotFoundError as e:
@@ -2284,7 +2334,6 @@ def get_dataset_info():
 @app.route('/api/algorithms', methods=['GET'])
 def get_algorithms():
     """Get list of available algorithms with recommendations."""
-    global dataset_profile
     
     algorithms = [
         {
@@ -2386,8 +2435,8 @@ def get_algorithms():
     ]
     
     recommendation = None
-    if dataset_profile:
-        recommendation = recommend_algorithm(dataset_profile)
+    if get_profile():
+        recommendation = recommend_algorithm(get_profile())
     
     return jsonify({
         'algorithms': algorithms,
@@ -2901,4 +2950,6 @@ if __name__ == '__main__':
     print("  - Extended: Fuzzy Apriori, Two-Phase HUIM, Lossy Counting")
     print("  - ML: Naive Bayes, Decision Tree, K-Means, DBSCAN")
     print("="*60)
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    debug = os.environ.get("FLASK_DEBUG", "").lower() in ("1", "true", "yes")
+    port = int(os.environ.get("PORT", "5000"))
+    app.run(debug=debug, host='0.0.0.0', port=port)

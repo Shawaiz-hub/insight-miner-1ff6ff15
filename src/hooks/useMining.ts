@@ -1,5 +1,6 @@
 import { useState, useCallback } from "react";
 import type { AssociationRule, FrequentItemset, MiningParams } from "@/pages/Dashboard";
+import { authFetch } from "@/lib/authFetch";
 
 // API Configuration - uses environment variable in production
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 
@@ -136,7 +137,7 @@ export function useMining() {
       const formData = new FormData();
       formData.append("file", file);
 
-      const response = await fetch(`${API_BASE}/api/upload`, {
+      const response = await authFetch(`${API_BASE}/api/upload`, {
         method: "POST",
         body: formData,
       });
@@ -167,7 +168,7 @@ export function useMining() {
     setError(null);
     
     try {
-      const response = await fetch(`${API_BASE}/api/preprocess`, {
+      const response = await authFetch(`${API_BASE}/api/preprocess`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -211,7 +212,7 @@ export function useMining() {
     setError(null);
     
     try {
-      const response = await fetch(`${API_BASE}/api/dataset/info`);
+      const response = await authFetch(`${API_BASE}/api/dataset/info`);
       const data = await response.json();
 
       if (!response.ok) {
@@ -233,7 +234,7 @@ export function useMining() {
     setError(null);
     
     try {
-      const response = await fetch(`${API_BASE}/api/recommend`, {
+      const response = await authFetch(`${API_BASE}/api/recommend`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -275,7 +276,7 @@ export function useMining() {
 
       console.log(`Calling Flask backend with algorithm: ${algorithm}`);
       
-      const response = await fetch(`${API_BASE}/api/mine`, {
+      const response = await authFetch(`${API_BASE}/api/mine`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -360,7 +361,7 @@ export function useMining() {
         setProgress((p) => Math.min(p + 15, 85));
       }, 200);
 
-      const response = await fetch(`${API_BASE}/api/classify`, {
+      const response = await authFetch(`${API_BASE}/api/classify`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -403,7 +404,7 @@ export function useMining() {
         setProgress((p) => Math.min(p + 15, 85));
       }, 200);
 
-      const response = await fetch(`${API_BASE}/api/cluster`, {
+      const response = await authFetch(`${API_BASE}/api/cluster`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -438,7 +439,7 @@ export function useMining() {
     setError(null);
     
     try {
-      const response = await fetch(`${API_BASE}/api/elbow`, {
+      const response = await authFetch(`${API_BASE}/api/elbow`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -462,7 +463,7 @@ export function useMining() {
 
   const checkHealth = useCallback(async (): Promise<boolean> => {
     try {
-      const response = await fetch(`${API_BASE}/api/health`);
+      const response = await authFetch(`${API_BASE}/api/health`);
       return response.ok;
     } catch {
       return false;
