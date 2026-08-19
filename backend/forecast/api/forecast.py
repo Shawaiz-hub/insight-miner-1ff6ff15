@@ -1,6 +1,8 @@
 """Forecasting REST API — upload, train, and stored runs."""
 from __future__ import annotations
 
+import logging
+import os
 import time
 import warnings
 from typing import Any
@@ -16,6 +18,7 @@ from services.metrics import evaluate, sanitize
 from services.registry import MODEL_REGISTRY, availability, label_for, resolve
 
 router = APIRouter(prefix="/forecast", tags=["forecast"])
+logger = logging.getLogger("forecast.api")
 
 
 # ------------------------------------------------------------------- schemas
@@ -47,17 +50,33 @@ class TrainRequest(BaseModel):
 
 
 # --------------------------------------------------------------------- upload
+ALLOWED_EXTENSIONS = {".csv", ".xlsx", ".xls", ".json"}
+MAX_UPLOAD_BYTES = int(os.environ.get("MAX_UPLOAD_MB", "100")) * 1024 * 1024
+MAX_ROWS = int(os.environ.get("MAX_ROWS", "500000"))
+MAX_COLUMNS = int(os.environ.get("MAX_COLUMNS", "200"))
+
+
 @router.post("/upload")
 async def upload(file: UploadFile = File(...)):
+    ext = os.path.splitext((file.filename or "").lower())[1]
+    if ext not in ALLOWED_EXTENSIONS:
+        raise HTTPException(status_code=400, detail=f"Unsupported file type '{ext or "unknown"}'. Upload CSV, XLSX or JSON.")
     content = await file.read()
     if not content:
         raise HTTPException(status_code=400, detail="Uploaded file is empty.")
+    if len(content) > MAX_UPLOAD_BYTES:
+        raise HTTPException(status_code=413, detail=f"File is larger than the {MAX_UPLOAD_BYTES // (1024 * 1024)} MB limit.")
     try:
         df = prep.read_dataframe(file.filename or "data.csv", content)
     except Exception as exc:
         raise HTTPException(status_code=400, detail=f"Could not parse file: {exc}") from exc
     if df.empty:
         raise HTTPException(status_code=400, detail="No rows found in the uploaded file.")
+    if len(df) > MAX_ROWS:
+        raise HTTPException(status_code=413, detail=f"Dataset has {len(df)} rows; the limit is {MAX_ROWS}.")
+    if df.shape[1] > MAX_COLUMNS:
+        raise HTTPException(status_code=400, detail=f"Dataset has {df.shape[1]} columns; the limit is {MAX_COLUMNS}.")
+    logger.info("upload accepted rows=%s cols=%s bytes=%s", len(df), df.shape[1], len(content))
 
     upload_id = store.save_upload(file.filename or "data.csv", content)
     return {
@@ -199,12 +218,15 @@ def train(req: TrainRequest):
     if not requested:
         raise HTTPException(status_code=400, detail="No supported models selected.")
 
+    logger.info("training models=%s periods=%s horizon=%s freq=%s", requested, len(y), steps, req.frequency)
     results, failures = [], []
     for model_id in requested:
         try:
             results.append(_run_model(model_id, y, dates, season, req, holdout, steps))
+            logger.info("model %s trained", model_id)
         except Exception as exc:  # per-model isolation
-            failures.append({"model": model_id, "label": label_for(model_id), "error": str(exc)[:300]})
+            logger.warning("model %s failed: %s", model_id, exc)
+            failures.append({"model": model_id, "label": label_for(model_id), "status": "failed", "error": str(exc)[:300]})
 
     if not results:
         raise HTTPException(
@@ -255,6 +277,7 @@ def train(req: TrainRequest):
         "trainingTimeMs": best["trainingTimeMs"],
         "predictionTimeMs": best["predictionTimeMs"],
         "holdoutSize": holdout,
+        "validation_strategy": "chronological_holdout",
         "predictions": len(forecast_rows),
         "preprocessing": stats,
         "history": history,
@@ -274,6 +297,8 @@ def train(req: TrainRequest):
                 "rmse": sanitize(r["scores"]["rmse"]),
                 "mae": sanitize(r["scores"]["mae"]),
                 "mape": sanitize(r["scores"]["mape"]),
+                "smape": sanitize(r["scores"].get("smape")),
+                "wape": sanitize(r["scores"].get("wape")),
                 "r2": sanitize(r["scores"]["r2"]),
                 "accuracy": sanitize(r["scores"]["accuracy"]),
                 "trainingTimeMs": r["trainingTimeMs"],

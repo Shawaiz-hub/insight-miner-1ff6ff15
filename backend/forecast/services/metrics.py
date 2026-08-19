@@ -52,6 +52,23 @@ def r2(actual, predicted) -> float:
     return float(1.0 - ss_res / ss_tot)
 
 
+def smape(actual, predicted) -> float:
+    a, p = _clean(actual, predicted)
+    denom = (np.abs(a) + np.abs(p)) / 2.0
+    mask = denom > 1e-9
+    if not mask.any():
+        return float("nan")
+    return float(np.mean(np.abs(a[mask] - p[mask]) / denom[mask]) * 100.0)
+
+
+def wape(actual, predicted) -> float:
+    a, p = _clean(actual, predicted)
+    total = float(np.sum(np.abs(a)))
+    if total <= 1e-9:
+        return float("nan")
+    return float(np.sum(np.abs(a - p)) / total * 100.0)
+
+
 def evaluate(actual, predicted) -> dict:
     m = mape(actual, predicted)
     accuracy = float(max(0.0, min(100.0, 100.0 - m))) if np.isfinite(m) else float("nan")
@@ -59,6 +76,8 @@ def evaluate(actual, predicted) -> dict:
         "rmse": rmse(actual, predicted),
         "mae": mae(actual, predicted),
         "mape": m,
+        "smape": smape(actual, predicted),
+        "wape": wape(actual, predicted),
         "r2": r2(actual, predicted),
         "accuracy": accuracy,
     }
