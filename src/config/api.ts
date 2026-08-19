@@ -8,7 +8,7 @@
  */
 export const API_BASE = import.meta.env.VITE_API_BASE_URL || 
   (import.meta.env.PROD 
-    ? 'https://datamining-backend-7474658865580035.aws.databricksapps.com/'  // Update this with your PythonAnywhere URL
+    ? 'https://datamining-backend-7474658865580035.aws.databricksapps.com'  // Update this with your PythonAnywhere URL
     : 'http://localhost:5000');
 
 /**
@@ -45,7 +45,7 @@ export const API_ENDPOINTS = {
 export const FORECAST_API_BASE = (
   import.meta.env.VITE_FORECAST_API_URL ||
   (import.meta.env.PROD
-    ? 'https://smartmine-forecast-production.up.railway.app'
+    ? 'https://datamining-backend-7474658865580035.aws.databricksapps.com'
     : 'http://localhost:8000')
 ).replace(/\/+$/, '');
 
