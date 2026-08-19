@@ -5,6 +5,7 @@
  */
 
 import { FORECAST_ENDPOINTS } from "@/config/api";
+import { authFetch } from "@/lib/authFetch";
 import type {
   CleaningOptions,
   CleaningSummary,
@@ -61,7 +62,7 @@ const OFFLINE_MESSAGE =
 async function request<T>(url: string, init: RequestInit): Promise<T> {
   let response: Response;
   try {
-    response = await fetch(url, init);
+    response = await authFetch(url, init);
   } catch {
     throw new Error(OFFLINE_MESSAGE);
   }
@@ -77,7 +78,7 @@ async function request<T>(url: string, init: RequestInit): Promise<T> {
 
 export async function checkForecastHealth(): Promise<boolean> {
   try {
-    const res = await fetch(FORECAST_ENDPOINTS.health, { method: "GET" });
+    const res = await authFetch(FORECAST_ENDPOINTS.health, { method: "GET" });
     return res.ok;
   } catch {
     return false;
