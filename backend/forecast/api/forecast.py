@@ -60,7 +60,7 @@ MAX_COLUMNS = int(os.environ.get("MAX_COLUMNS", "200"))
 async def upload(file: UploadFile = File(...)):
     ext = os.path.splitext((file.filename or "").lower())[1]
     if ext not in ALLOWED_EXTENSIONS:
-        raise HTTPException(status_code=400, detail=f"Unsupported file type '{ext or "unknown"}'. Upload CSV, XLSX or JSON.")
+        raise HTTPException(status_code=400, detail="Unsupported file type '%s'. Upload CSV, XLSX or JSON." % (ext or "unknown"))
     content = await file.read()
     if not content:
         raise HTTPException(status_code=400, detail="Uploaded file is empty.")
