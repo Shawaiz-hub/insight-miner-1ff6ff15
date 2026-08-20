@@ -25,11 +25,10 @@ interface SiteSettings {
 
 const defaultSettings: SiteSettings = {
   footerLinks: [
-    { label: "GitHub", url: "#", icon: "github" },
-    { label: "Twitter", url: "#", icon: "twitter" },
-    { label: "LinkedIn", url: "#", icon: "linkedin" },
+    { label: "GitHub", url: "https://github.com/Shawaiz-hub", icon: "github" },
+    { label: "LinkedIn", url: "https://www.linkedin.com/in/shawaiz-ali-2025b1394", icon: "linkedin" },
   ],
-  backendUrl: "https://bakend-dim.up.railway.app",
+  backendUrl: API_BASE,
   siteName: "SmartMine",
   siteDescription: "Advanced data mining platform for pattern discovery and rule extraction.",
 };
@@ -37,7 +36,8 @@ const defaultSettings: SiteSettings = {
 export default function AdminSettings() {
   const [settings, setSettings] = useState<SiteSettings>(defaultSettings);
   const [saving, setSaving] = useState(false);
-  const [backendStatus, setBackendStatus] = useState<"checking" | "online" | "offline">("checking");
+  const [backendStatus, setBackendStatus] = useState<BackendStatus>("checking");
+  const [backendError, setBackendError] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -61,13 +61,12 @@ export default function AdminSettings() {
 
   const checkBackend = async () => {
     setBackendStatus("checking");
-    try {
-      const res = await fetch(`${settings.backendUrl}/api/health`, { signal: AbortSignal.timeout(5000) });
-      setBackendStatus(res.ok ? "online" : "offline");
-    } catch {
-      setBackendStatus("offline");
-    }
+    setBackendError(null);
+    const { status, error } = await checkBackendHealth(settings.backendUrl || API_BASE);
+    setBackendStatus(status);
+    setBackendError(error ?? null);
   };
+
 
   const handleSave = async () => {
     setSaving(true);
