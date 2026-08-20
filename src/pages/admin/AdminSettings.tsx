@@ -157,13 +157,16 @@ export default function AdminSettings() {
           <CardContent className="space-y-4">
             <div className="flex items-center gap-3">
               <Label>Status:</Label>
-              <Badge variant={backendStatus === "online" ? "default" : backendStatus === "offline" ? "destructive" : "secondary"}>
-                {backendStatus === "checking" ? "Checking..." : backendStatus === "online" ? "Online" : "Offline"}
+              <Badge variant={backendStatus === "connected" ? "default" : backendStatus === "disconnected" ? "destructive" : "secondary"}>
+                {backendStatus === "checking" ? "Checking..." : backendStatus === "connected" ? "Connected" : "Disconnected"}
               </Badge>
               <Button variant="outline" size="sm" onClick={checkBackend}>
                 Refresh
               </Button>
             </div>
+            {backendStatus === "disconnected" && backendError && (
+              <p className="text-xs text-destructive break-all">{backendError}</p>
+            )}
             <div className="space-y-2">
               <Label>Backend URL</Label>
               <Input
