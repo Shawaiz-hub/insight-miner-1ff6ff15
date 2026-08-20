@@ -71,3 +71,22 @@ List available algorithms.
 
 For Java-based SPMF algorithms, place `spmf.jar` in the `spmf/` folder.
 Download from: http://www.philippe-fournier-viger.com/spmf/
+
+---
+
+## Deployment
+
+- **Data-mining API (Flask, `backend/app.py`)** — auth-guarded; see `backend/security.py`.
+- **Forecasting API (FastAPI, `backend/forecast/`)** — deployed as a Databricks App.
+  See [`forecast/DATABRICKS_DEPLOYMENT.md`](forecast/DATABRICKS_DEPLOYMENT.md).
+
+Production base URL used by the frontend:
+
+```
+https://datamining-backend-7474658865580035.aws.databricksapps.com
+```
+
+Health check: `GET /api/health` → `{"status":"ok","message":"SmartMine backend is running"}`
+
+Environment variables: `FRONTEND_URL`, `CORS_ORIGINS`, `LOG_LEVEL`, `MAX_UPLOAD_MB`,
+`MAX_ROWS`, `MAX_COLUMNS`, `DATABRICKS_APP_PORT` (Databricks-provided).

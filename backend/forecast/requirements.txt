@@ -1,3 +1,5 @@
+# Pinned for Python 3.11 (Databricks Apps default runtime).
+# numpy stays <2 because prophet/tensorflow-cpu wheels are built against 1.26.x.
 fastapi==0.115.6
 uvicorn[standard]==0.34.0
 python-multipart==0.0.20
@@ -8,6 +10,9 @@ scikit-learn==1.5.2
 statsmodels==0.14.4
 prophet==1.1.6
 xgboost==2.1.3
+# tensorflow-cpu is the largest dependency (~250MB). If the Databricks App build
+# exceeds its image budget, drop this line — LSTM/GRU then report as unavailable
+# via /api/health while every other model keeps working.
 tensorflow-cpu==2.17.1
 openpyxl==3.1.5
 joblib==1.4.2

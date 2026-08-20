@@ -9,6 +9,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Save, Plus, Trash2, Server } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { API_BASE, checkBackendHealth, type BackendStatus } from "@/config/api";
+
 
 interface FooterLink {
   label: string;
@@ -25,11 +27,10 @@ interface SiteSettings {
 
 const defaultSettings: SiteSettings = {
   footerLinks: [
-    { label: "GitHub", url: "#", icon: "github" },
-    { label: "Twitter", url: "#", icon: "twitter" },
-    { label: "LinkedIn", url: "#", icon: "linkedin" },
+    { label: "GitHub", url: "https://github.com/Shawaiz-hub", icon: "github" },
+    { label: "LinkedIn", url: "https://www.linkedin.com/in/shawaiz-ali-2025b1394", icon: "linkedin" },
   ],
-  backendUrl: "https://bakend-dim.up.railway.app",
+  backendUrl: API_BASE,
   siteName: "SmartMine",
   siteDescription: "Advanced data mining platform for pattern discovery and rule extraction.",
 };
@@ -37,7 +38,8 @@ const defaultSettings: SiteSettings = {
 export default function AdminSettings() {
   const [settings, setSettings] = useState<SiteSettings>(defaultSettings);
   const [saving, setSaving] = useState(false);
-  const [backendStatus, setBackendStatus] = useState<"checking" | "online" | "offline">("checking");
+  const [backendStatus, setBackendStatus] = useState<BackendStatus>("checking");
+  const [backendError, setBackendError] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -61,13 +63,12 @@ export default function AdminSettings() {
 
   const checkBackend = async () => {
     setBackendStatus("checking");
-    try {
-      const res = await fetch(`${settings.backendUrl}/api/health`, { signal: AbortSignal.timeout(5000) });
-      setBackendStatus(res.ok ? "online" : "offline");
-    } catch {
-      setBackendStatus("offline");
-    }
+    setBackendError(null);
+    const { status, error } = await checkBackendHealth(settings.backendUrl || API_BASE);
+    setBackendStatus(status);
+    setBackendError(error ?? null);
   };
+
 
   const handleSave = async () => {
     setSaving(true);
@@ -156,13 +157,16 @@ export default function AdminSettings() {
           <CardContent className="space-y-4">
             <div className="flex items-center gap-3">
               <Label>Status:</Label>
-              <Badge variant={backendStatus === "online" ? "default" : backendStatus === "offline" ? "destructive" : "secondary"}>
-                {backendStatus === "checking" ? "Checking..." : backendStatus === "online" ? "Online" : "Offline"}
+              <Badge variant={backendStatus === "connected" ? "default" : backendStatus === "disconnected" ? "destructive" : "secondary"}>
+                {backendStatus === "checking" ? "Checking..." : backendStatus === "connected" ? "Connected" : "Disconnected"}
               </Badge>
               <Button variant="outline" size="sm" onClick={checkBackend}>
                 Refresh
               </Button>
             </div>
+            {backendStatus === "disconnected" && backendError && (
+              <p className="text-xs text-destructive break-all">{backendError}</p>
+            )}
             <div className="space-y-2">
               <Label>Backend URL</Label>
               <Input

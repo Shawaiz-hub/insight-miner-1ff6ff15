@@ -2,11 +2,9 @@ import { useState, useCallback } from "react";
 import type { AssociationRule, FrequentItemset, MiningParams } from "@/pages/Dashboard";
 import { authFetch } from "@/lib/authFetch";
 
-// API Configuration - uses environment variable in production
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 
-  (import.meta.env.PROD 
-    ? 'https://bakend-dim.up.railway.app'  // Update with your deployment URL
-    : 'http://localhost:5000');
+// API Configuration — single source of truth in src/config/api.ts
+import { API_BASE } from "@/config/api";
+
 
 interface MiningResult {
   rules: AssociationRule[];
