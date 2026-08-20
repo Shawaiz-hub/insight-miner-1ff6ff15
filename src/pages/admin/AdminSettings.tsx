@@ -9,6 +9,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Save, Plus, Trash2, Server } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { API_BASE, checkBackendHealth, type BackendStatus } from "@/config/api";
+
 
 interface FooterLink {
   label: string;
