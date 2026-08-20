@@ -9,7 +9,7 @@ from typing import Any
 
 import numpy as np
 import pandas as pd
-from fastapi import APIRouter, File, HTTPException, UploadFile
+from fastapi import APIRouter, BackgroundTasks, File, HTTPException, UploadFile
 from pydantic import BaseModel, Field
 
 import store
@@ -347,3 +347,37 @@ def run_detail(run_id: str):
     if not run:
         raise HTTPException(status_code=404, detail="Run not found.")
     return run
+
+
+# ------------------------------------------------------- background training
+# Heavy models (LSTM/GRU) can exceed a browser request timeout, so a job can be
+# started in the background and polled instead.
+_JOBS: dict[str, dict[str, Any]] = {}
+
+
+def _run_job(job_id: str, req: TrainRequest) -> None:
+    _JOBS[job_id].update(status="running", stage="training")
+    try:
+        payload = train(req)
+        _JOBS[job_id].update(status="completed", stage="complete", result=payload, runId=payload.get("runId"))
+    except HTTPException as exc:
+        _JOBS[job_id].update(status="failed", stage="failed", error=str(exc.detail))
+    except Exception as exc:  # pragma: no cover - defensive
+        logger.exception("job %s failed", job_id)
+        _JOBS[job_id].update(status="failed", stage="failed", error=str(exc)[:300])
+
+
+@router.post("/jobs")
+def create_job(req: TrainRequest, background: BackgroundTasks):
+    job_id = store.new_id("job")
+    _JOBS[job_id] = {"jobId": job_id, "status": "queued", "stage": "queued", "models": req.models}
+    background.add_task(_run_job, job_id, req)
+    return {"jobId": job_id, "status": "queued"}
+
+
+@router.get("/jobs/{job_id}")
+def job_status(job_id: str):
+    job = _JOBS.get(job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found.")
+    return job
