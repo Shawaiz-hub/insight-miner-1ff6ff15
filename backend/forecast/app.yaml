@@ -1,0 +1,30 @@
+command:
+  - "uvicorn"
+  - "app:app"
+  - "--host"
+  - "0.0.0.0"
+  - "--port"
+  - "$DATABRICKS_APP_PORT"
+
+env:
+  # Public URL of the React frontend — drives the CORS allow-list.
+  - name: FRONTEND_URL
+    value: "https://advance-data-mining.vercel.app"
+  # Optional extra origins (comma separated), e.g. Lovable preview hosts.
+  - name: CORS_ORIGINS
+    value: "https://advance-data-mining.lovable.app"
+  - name: LOG_LEVEL
+    value: "INFO"
+  - name: MAX_UPLOAD_MB
+    value: "100"
+  - name: MAX_ROWS
+    value: "500000"
+  - name: MAX_COLUMNS
+    value: "200"
+  # Secrets come from a Databricks secret scope — never inline them here.
+  - name: SUPABASE_URL
+    valueFrom: "supabase-url"
+  - name: SUPABASE_ANON_KEY
+    valueFrom: "supabase-anon-key"
+  - name: BACKEND_API_KEY
+    valueFrom: "backend-api-key"
