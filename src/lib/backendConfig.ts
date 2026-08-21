@@ -18,12 +18,13 @@ let loaded: Promise<BackendConfig> | null = null;
 /** Load the admin-defined backend endpoints and apply them app-wide. */
 export function loadBackendConfig(force = false): Promise<BackendConfig> {
   if (!loaded || force) {
-    loaded = supabase
-      .from("site_settings")
-      .select("setting_value")
-      .eq("setting_key", BACKEND_CONFIG_KEY)
-      .maybeSingle()
-      .then(({ data }) => {
+    loaded = (async (): Promise<BackendConfig> => {
+      try {
+        const { data } = await supabase
+          .from("site_settings")
+          .select("setting_value")
+          .eq("setting_key", BACKEND_CONFIG_KEY)
+          .maybeSingle();
         const value = (data?.setting_value as unknown as Partial<BackendConfig>) || {};
         const config: BackendConfig = {
           apiBaseUrl: normalize(value.apiBaseUrl || ""),
@@ -31,8 +32,10 @@ export function loadBackendConfig(force = false): Promise<BackendConfig> {
         };
         setBackendOverrides(config);
         return config;
-      })
-      .catch(() => ({ apiBaseUrl: "", forecastApiUrl: "" }));
+      } catch {
+        return { apiBaseUrl: "", forecastApiUrl: "" };
+      }
+    })();
   }
   return loaded;
 }
