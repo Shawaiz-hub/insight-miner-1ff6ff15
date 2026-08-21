@@ -39,12 +39,15 @@ _raw_origins = ",".join(
     v for v in (os.environ.get("FRONTEND_URL"), os.environ.get("CORS_ORIGINS")) if v
 )
 ALLOWED_ORIGINS = [o.strip().rstrip("/") for o in _raw_origins.split(",") if o.strip()] or ["*"]
-logger.info("CORS allowed origins: %s", ALLOWED_ORIGINS)
+# Always allow Vercel preview deployments and Lovable preview hosts.
+DEFAULT_ORIGIN_REGEX = r"https://([a-z0-9-]+\.)*(vercel\.app|lovable\.app|lovableproject\.com)"
+ORIGIN_REGEX = os.environ.get("CORS_ORIGIN_REGEX") or DEFAULT_ORIGIN_REGEX
+logger.info("CORS allowed origins: %s (regex: %s)", ALLOWED_ORIGINS, ORIGIN_REGEX)
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS,
-    allow_origin_regex=os.environ.get("CORS_ORIGIN_REGEX") or None,
+    allow_origin_regex=ORIGIN_REGEX,
     allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -64,6 +67,9 @@ def _health_payload() -> dict:
         "service": "forecasting",
         "version": app.version,
         "models": availability(),
+        "frontendUrl": (os.environ.get("FRONTEND_URL") or "").rstrip("/"),
+        "corsOrigins": ALLOWED_ORIGINS,
+        "corsOriginRegex": ORIGIN_REGEX,
     }
 
 
