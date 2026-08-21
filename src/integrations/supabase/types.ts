@@ -398,6 +398,84 @@ export type Database = {
         }
         Relationships: []
       }
+      team_members: {
+        Row: {
+          created_at: string
+          department: string | null
+          description: string | null
+          display_order: number
+          education: string | null
+          email: string | null
+          experience: string | null
+          facebook_url: string | null
+          full_name: string
+          github_url: string | null
+          id: string
+          image_url: string | null
+          instagram_url: string | null
+          is_active: boolean
+          is_featured: boolean
+          linkedin_url: string | null
+          location: string | null
+          phone: string | null
+          portfolio_url: string | null
+          role: string
+          short_bio: string | null
+          skills: string[]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          department?: string | null
+          description?: string | null
+          display_order?: number
+          education?: string | null
+          email?: string | null
+          experience?: string | null
+          facebook_url?: string | null
+          full_name: string
+          github_url?: string | null
+          id?: string
+          image_url?: string | null
+          instagram_url?: string | null
+          is_active?: boolean
+          is_featured?: boolean
+          linkedin_url?: string | null
+          location?: string | null
+          phone?: string | null
+          portfolio_url?: string | null
+          role: string
+          short_bio?: string | null
+          skills?: string[]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          department?: string | null
+          description?: string | null
+          display_order?: number
+          education?: string | null
+          email?: string | null
+          experience?: string | null
+          facebook_url?: string | null
+          full_name?: string
+          github_url?: string | null
+          id?: string
+          image_url?: string | null
+          instagram_url?: string | null
+          is_active?: boolean
+          is_featured?: boolean
+          linkedin_url?: string | null
+          location?: string | null
+          phone?: string | null
+          portfolio_url?: string | null
+          role?: string
+          short_bio?: string | null
+          skills?: string[]
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
